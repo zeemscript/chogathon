@@ -1,36 +1,22 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Chog Souls
 
-## Getting Started
+Every Chog wakes up as an AI character with its own personality and memory — and that memory lives with the NFT. Sell your Chog, and its friendships, grudges and story go with it.
 
-First, run the development server:
+Built for Chogathon 2026.
 
+## Key facts
+- Chain: Monad mainnet (143), RPC `https://rpc.monad.xyz`
+- Chog Genesis NFT: `0xc96d31f8626c6d03fae5dcd3d61e3fb9f4a73763` (1969 supply)
+- $CHOG token: `0x350035555E10d9AfAF1566AaebfCeD5BA6C27777` (18 decimals)
+- Metadata: always call `tokenURI(id)` — token IDs don't match file numbers (token #1 → `1462.json`). Use `gateway.pinata.cloud`; ipfs.io/dweb.link are unreliable.
+- Traits: Background, Base, Skin, Side, Body, Mouth, Eyes, Head, Accessory, Form, Tier, Naked
+
+## Stack
+Next.js + TypeScript, wagmi/viem/RainbowKit, Supabase (memory keyed by `token_id`), DeepSeek (`deepseek-chat`).
+
+## Dev
 ```bash
+cp .env.example .env.local
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
