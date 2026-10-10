@@ -14,6 +14,7 @@ export default function ChatPanel({ tokenId, name, owner }: { tokenId: number; n
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [left, setLeft] = useState<{ remaining: number; limit: number }>();
   const listRef = useRef<HTMLDivElement>(null);
 
   // Scroll only the message list (scrollIntoView would move the whole page).
@@ -36,7 +37,14 @@ export default function ChatPanel({ tokenId, name, owner }: { tokenId: number; n
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ tokenId, message, auth }),
       });
-      if (!res.ok || !res.body) throw new Error((await res.json().catch(() => null))?.error ?? "Something went wrong");
+      if (!res.ok || !res.body) {
+        const j = await res.json().catch(() => null);
+        if (res.status === 429) setLeft({ remaining: 0, limit: j?.limit ?? 0 });
+        throw new Error(j?.error ?? "Something went wrong");
+      }
+      const remaining = Number(res.headers.get("x-chat-remaining"));
+      const limit = Number(res.headers.get("x-chat-limit"));
+      if (Number.isFinite(remaining) && limit) setLeft({ remaining, limit });
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       for (;;) {

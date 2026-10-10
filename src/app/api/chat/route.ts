@@ -4,6 +4,7 @@ import { addLoyalty, auraDay, award, getAura } from "@/lib/aura";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { parseTokenId } from "@/lib/chogs";
 import { getOwner } from "@/lib/owners";
+import { chatQuota } from "@/lib/limits";
 import { resolveSpeaker, visitorId, type AuthPayload } from "@/lib/speaker";
 import { prepareSoul, remember, systemPrompt, type Speaker } from "@/lib/soul";
 import { getRelations, listPosts, nudgeRelation } from "@/lib/town";
@@ -56,6 +57,19 @@ export async function POST(request: NextRequest) {
 
   const owner = await getOwner(tokenId);
   const speaker = await resolveSpeaker(body?.auth, owner);
+  // Who these turns belong to: the owner's wallet, or this specific visitor.
+  const memoryOwner = speaker.role === "owner" ? speaker.address! : `visitor:${visitorId(request, speaker)}`;
+
+  const quota = await chatQuota(memoryOwner, speaker.role);
+  if (!quota.allowed) {
+    const error =
+      quota.reason === "global"
+        ? "The Chogs are worn out from talking today. Come back tomorrow."
+        : speaker.role === "owner"
+          ? `You've used all ${quota.limit} chats for today. Your Chog needs its beauty sleep.`
+          : `You've used all ${quota.limit} visitor chats for today. Own a Chog to talk more.`;
+    return Response.json({ error, remaining: 0, limit: quota.limit }, { status: 429 });
+  }
   const [{ chog, memory }, relations, gossip, aura] = await Promise.all([
     prepareSoul(tokenId, owner),
     getRelations(tokenId),
@@ -70,7 +84,7 @@ export async function POST(request: NextRequest) {
     .filter((m) => m.kind === "chat")
     // Owners inherit every past owner's conversations; visitors only see their own.
     .filter((m) =>
-      speaker.role === "owner" ? !m.owner?.startsWith("visitor:") : m.owner === `visitor:${speaker.address ?? "anon"}`,
+      speaker.role === "owner" ? !m.owner?.startsWith("visitor:") : m.owner === memoryOwner,
     )
     .slice(-20)
     .map((m) => ({ role: m.role === "user" ? ("user" as const) : ("assistant" as const), content: m.content }));
@@ -93,7 +107,6 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Your Chog is napping (AI unavailable). Try again soon." }, { status: 503 });
   }
 
-  const memoryOwner = speaker.role === "owner" ? speaker.address! : `visitor:${speaker.address ?? "anon"}`;
   const encoder = new TextEncoder();
   let reply = "";
   const body2 = new ReadableStream<Uint8Array>({
@@ -123,6 +136,11 @@ export async function POST(request: NextRequest) {
   });
 
   return new Response(body2, {
-    headers: { "content-type": "text/plain; charset=utf-8", "x-speaker-role": speaker.role },
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+      "x-speaker-role": speaker.role,
+      "x-chat-remaining": String(quota.remaining - 1),
+      "x-chat-limit": String(quota.limit),
+    },
   });
 }
