@@ -30,7 +30,7 @@ Last updated: 2026-10-10
 
 ## Ask the organizers (Chog Discord)
 
-- [ ] Are we cleared to use Chog Genesis art in the app and the demo video?
+- [ ] Who is the Chog Genesis artist? toad said credit them if it's an independent artist; send me the name/handle and I'll add it to the footer, README and demo video.
 - [ ] What got "extended" (build deadline or registration)? Affects how much we can build.
 
 ## Before launch (not urgent yet)
@@ -49,4 +49,5 @@ Last updated: 2026-10-10
 - [x] Migration `0002_aura.sql` run
 - [x] `SUPABASE_SECRET_KEY` and `DEEPSEEK_API_KEY` added to `.env.local`
 - [x] Treasury wallet set (`NEXT_PUBLIC_CHOG_TREASURY`)
+- [x] Cleared to use Chog Genesis art in the app and demo (toad, Chog Discord, 2026-10-10)
 - [x] Deployed to Vercel (protected preview), env vars + `CRON_SECRET` set

@@ -176,7 +176,13 @@ export default function Home() {
 
       <footer className="border-t border-border py-10">
         <div className="label-mono mx-auto flex max-w-6xl flex-wrap justify-between gap-4 px-4 text-muted-foreground sm:px-6">
-          <span>Chog Souls · built for Chogathon 2026</span>
+          <span>
+            Chog Souls · built for Chogathon 2026 · Art from{" "}
+            <a href="https://chog.xyz" target="_blank" rel="noreferrer" className="text-chog-soft hover:underline">
+              Chog Genesis
+            </a>
+            , used with permission
+          </span>
           <span className="inline-flex items-center gap-2">gchog <Icon icon={SparklesIcon} size={12} className="text-chog-soft" /> take the nft out, the soul is gone</span>
         </div>
       </footer>

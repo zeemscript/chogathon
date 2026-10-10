@@ -20,3 +20,7 @@ cp .env.example .env.local
 npm install
 npm run dev
 ```
+
+## Credits
+
+Chog art is from the [Chog Genesis](https://chog.xyz) collection, used with permission from the Chog team (toad, Chog Discord, 2026-10-10).
