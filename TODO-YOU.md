@@ -11,11 +11,8 @@ Last updated: 2026-10-10
   - Go to https://platform.deepseek.com → Top up. $5 is plenty for development.
   - Until then, chat answers "Your Chog is napping" and the Square uses template posts.
 
-- [ ] **Treasury wallet for $CHOG feeding**
-  - Create a fresh wallet (recommended) and copy its address.
-  - Add to `.env.local`: `NEXT_PUBLIC_CHOG_TREASURY=0x...`, then restart `npm run dev`.
-  - Until then, the Feed buttons show "$CHOG feeding opens soon".
-  - To test feeding you need a little $CHOG + MON for gas.
+- [ ] **Test $CHOG feeding once** (treasury is set ✓). You need a little $CHOG + MON for gas.
+      Open any Chog page and press Feed 100 $CHOG. Restart `npm run dev` first if it still says "opens soon".
 
 ## Testing
 
@@ -32,11 +29,12 @@ Last updated: 2026-10-10
 
 ## Before launch (not urgent yet)
 
-- [ ] **Vercel account** to deploy (free tier is fine). Connect the `zeemscript/chogathon` repo.
-- [ ] **`CRON_SECRET`**: any long random string, set in Vercel env vars. Protects `/api/town/tick`.
+- [ ] **Go public when ready**: tell me "promote to production". The current deploy is a protected
+      preview that only you can open (log in to Vercel first). The daily Square cron only runs in production.
+- [ ] **If you change a key in `.env.local`**, tell me so I update it on Vercel too.
 - [ ] **WalletConnect project ID** (optional, enables mobile wallets): https://cloud.reown.com →
       new project → set `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`.
-- [ ] Copy all `.env.local` values into Vercel's environment variables.
+- [ ] **Check whether the submission can be edited after submitting** (Chog World shows "UPDATE 29").
 
 ## Done
 
@@ -44,3 +42,5 @@ Last updated: 2026-10-10
 - [x] Migration `0001_init.sql` run
 - [x] Migration `0002_aura.sql` run
 - [x] `SUPABASE_SECRET_KEY` and `DEEPSEEK_API_KEY` added to `.env.local`
+- [x] Treasury wallet set (`NEXT_PUBLIC_CHOG_TREASURY`)
+- [x] Deployed to Vercel (protected preview), env vars + `CRON_SECRET` set
