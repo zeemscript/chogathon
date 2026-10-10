@@ -149,205 +149,130 @@ function Mini({ src, label, sub, color }: { src?: string; label: string; sub: st
   );
 }
 
+// The Chog's own art, blown up, blurred and saturated: every card gets its
+// own colours, so a feed full of Soul Cards never looks the same twice.
+const bgCache = new Map<number, string>();
+async function artBackdrop(tokenId: number): Promise<string | undefined> {
+  if (bgCache.has(tokenId)) return bgCache.get(tokenId);
+  try {
+    const res = await fetchArt(tokenId);
+    const jpg = await sharp(Buffer.from(await res.arrayBuffer()))
+      .resize(600, 315, { fit: "cover" })
+      .blur(18)
+      .modulate({ saturation: 1.7, brightness: 0.62 })
+      .jpeg({ quality: 70 })
+      .toBuffer();
+    const url = `data:image/jpeg;base64,${jpg.toString("base64")}`;
+    if (bgCache.size > 200) bgCache.delete(bgCache.keys().next().value!);
+    bgCache.set(tokenId, url);
+    return url;
+  } catch {
+    return;
+  }
+}
+
 export async function renderSoulCard(tokenId: number): Promise<ImageResponse> {
   const d = await getCardData(tokenId);
-  const [main, bestie, nemesis, fontList] = await Promise.all([
-    artDataUrl(tokenId, 400),
-    d.bestie ? artDataUrl(d.bestie.tokenId, 100) : undefined,
-    d.nemesis ? artDataUrl(d.nemesis.tokenId, 100) : undefined,
+  const [main, bg, bestie, nemesis, fontList] = await Promise.all([
+    artDataUrl(tokenId, 380),
+    artBackdrop(tokenId),
+    d.bestie ? artDataUrl(d.bestie.tokenId, 96) : undefined,
+    d.nemesis ? artDataUrl(d.nemesis.tokenId, 96) : undefined,
     cardFonts,
   ]);
-  const t = TIER[d.aura.tier] ?? TIER.Dormant;
   const r = RARITY[d.tierName] ?? RARITY.Common;
-  const quote = d.quote && (d.quote.length > 120 ? `${d.quote.slice(0, 117)}…` : d.quote);
+  // Until it earns a tier colour, a Chog glows in its rarity colour (never grey).
+  const t = d.aura.tier === "Dormant" ? r : (TIER[d.aura.tier] ?? r);
+  const quote = d.quote && (d.quote.length > 110 ? `${d.quote.slice(0, 107)}…` : d.quote);
+  const glass = { background: "rgba(10,7,22,.55)", border: "1px solid rgba(255,255,255,.14)" };
 
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          position: "relative",
-          background: "#0e0b1a",
-          fontFamily: "Inter",
-          color: "#f4f1fe",
-          overflow: "hidden",
-        }}
-      >
-        {/* glow orbs */}
-        <div style={{ position: "absolute", top: -260, left: -180, width: 760, height: 760, borderRadius: 999, background: `radial-gradient(circle, ${r.b}66 0%, transparent 65%)` }} />
-        <div style={{ position: "absolute", bottom: -300, right: -160, width: 720, height: 720, borderRadius: 999, background: "radial-gradient(circle, #836ef955 0%, transparent 65%)" }} />
-        <div style={{ position: "absolute", top: 40, right: 220, width: 360, height: 360, borderRadius: 999, background: "radial-gradient(circle, #ec489933 0%, transparent 65%)" }} />
-        {/* fine grid */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: "linear-gradient(rgba(244,241,254,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(244,241,254,.035) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }}
-        />
+      <div style={{ width: "100%", height: "100%", display: "flex", position: "relative", overflow: "hidden", background: "#0e0b1a", fontFamily: "Inter", color: "#fff" }}>
+        {/* the NFT itself, as the backdrop */}
+        {bg && (
+          // eslint-disable-next-line @next/next/no-img-element -- rendered by Satori
+          <img src={bg} width={1200} height={630} style={{ position: "absolute", inset: 0, width: 1200, height: 630 }} alt="" />
+        )}
+        {/* readability: darken toward the text side, plus a vignette */}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(8,5,18,.15) 0%, rgba(8,5,18,.55) 42%, rgba(8,5,18,.86) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(120% 100% at 50% 50%, transparent 55%, rgba(0,0,0,.55) 100%)" }} />
 
-        {/* LEFT: the art */}
+        {/* LEFT: portrait inside its Aura */}
         <div style={{ display: "flex", position: "relative", width: 500, height: "100%", alignItems: "center", justifyContent: "center" }}>
-          <div
-            style={{
-              display: "flex",
-              padding: 6,
-              borderRadius: 34,
-              background: `linear-gradient(135deg, ${r.a}, ${r.b})`,
-              transform: "rotate(-4deg)",
-              boxShadow: `0 0 80px ${r.b}99, 0 40px 80px rgba(0,0,0,.6)`,
-            }}
-          >
+          <div style={{ position: "absolute", width: 520, height: 520, borderRadius: 999, background: `radial-gradient(circle, ${t.b}88 0%, ${t.b}22 45%, transparent 70%)` }} />
+          {[470, 420, 372].map((size, i) => (
+            <div
+              key={size}
+              style={{ position: "absolute", width: size, height: size, borderRadius: 999, border: `${3 - i}px solid ${t.a}`, opacity: 0.25 + i * 0.2 }}
+            />
+          ))}
+          <div style={{ display: "flex", padding: 6, borderRadius: 40, background: `linear-gradient(135deg, ${r.a}, ${r.b})`, transform: "rotate(-3deg)", boxShadow: `0 0 70px ${t.b}cc, 0 40px 80px rgba(0,0,0,.65)` }}>
             {main ? (
               // eslint-disable-next-line @next/next/no-img-element -- rendered by Satori
-              <img src={main} width={400} height={400} style={{ borderRadius: 28 }} alt="" />
+              <img src={main} width={320} height={320} style={{ borderRadius: 34 }} alt="" />
             ) : (
-              <div style={{ width: 400, height: 400, borderRadius: 28, background: "#181330" }} />
+              <div style={{ width: 320, height: 320, borderRadius: 34, background: "#181330" }} />
             )}
           </div>
-          <div
-            style={{
-              ...mono,
-              position: "absolute",
-              top: 92,
-              left: 54,
-              display: "flex",
-              padding: "8px 16px",
-              borderRadius: 999,
-              background: "rgba(14,11,26,.85)",
-              border: `1px solid ${r.a}`,
-              color: r.text,
-              fontSize: 13,
-              transform: "rotate(-4deg)",
-            }}
-          >
+          <div style={{ ...mono, position: "absolute", top: 120, left: 78, display: "flex", padding: "8px 16px", borderRadius: 999, background: "rgba(10,7,22,.85)", border: `1px solid ${r.a}`, color: r.text, fontSize: 13, transform: "rotate(-3deg)" }}>
             {d.tierName}
           </div>
         </div>
 
         {/* RIGHT: the soul */}
-        <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "48px 56px 40px 8px" }}>
-          <div style={{ ...mono, display: "flex", alignItems: "center", gap: 10, color: "#a99bfc", fontSize: 14 }}>
-            <div style={{ width: 9, height: 9, borderRadius: 9, background: "#a99bfc", boxShadow: "0 0 12px #a99bfc" }} />
-            Chog Souls · Soul card
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "42px 56px 36px 4px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori */}
+            <img src={SOUL_FLAME_DATA_URL} width={30} height={31} alt="" />
+            <div style={{ ...mono, fontSize: 14, color: "rgba(255,255,255,.75)" }}>Chog Souls · Soul card</div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "flex-end", marginTop: 6 }}>
-            <div style={{ fontFamily: "Koulen", fontSize: 118, lineHeight: 0.9, color: "#f4f1fe" }}>Chog</div>
-            <div
-              style={{
-                fontFamily: "Koulen",
-                fontSize: 118,
-                lineHeight: 0.9,
-                marginLeft: 22,
-                backgroundImage: "linear-gradient(135deg, #a99bfc 0%, #836ef9 60%, #c084fc 100%)",
-                backgroundClip: "text",
-                color: "transparent",
-              }}
-            >
-              {`#${d.tokenId}`}
-            </div>
+          <div style={{ display: "flex", alignItems: "flex-end", marginTop: 10 }}>
+            <div style={{ fontFamily: "Koulen", fontSize: 108, lineHeight: 0.88 }}>Chog</div>
+            <div style={{ fontFamily: "Koulen", fontSize: 108, lineHeight: 0.88, marginLeft: 20, color: t.a }}>{`#${d.tokenId}`}</div>
           </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
-            <div style={{ fontFamily: "Koulen", fontSize: 32, color: "#f4f1fe", marginRight: 6 }}>{d.archetype}</div>
-            {d.temperament.slice(0, 3).map((x, i) => (
-              <div
-                key={x}
-                style={{
-                  ...mono,
-                  fontSize: 12,
-                  display: "flex",
-                  padding: "6px 12px",
-                  borderRadius: 999,
-                  border: i === 0 ? "1px solid rgba(255,255,255,.4)" : "1px solid rgba(169,155,252,.35)",
-                  background: i === 0 ? "linear-gradient(135deg, #836ef9, #a855f7)" : "rgba(244,241,254,.04)",
-                  color: i === 0 ? "#fff" : "#a99bfc",
-                }}
-              >
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
+            <div style={{ fontFamily: "Koulen", fontSize: 30, marginRight: 6 }}>{d.archetype}</div>
+            {d.temperament.slice(0, 3).map((x) => (
+              <div key={x} style={{ ...mono, ...glass, fontSize: 12, display: "flex", padding: "6px 12px", borderRadius: 999, color: "rgba(255,255,255,.9)" }}>
                 {x}
               </div>
             ))}
           </div>
 
-          {/* Aura block */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 26,
-              marginTop: 26,
-              padding: "20px 24px",
-              borderRadius: 22,
-              background: "rgba(22,18,40,.85)",
-              border: "1px solid rgba(169,155,252,.28)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                width: 104,
-                height: 104,
-                borderRadius: 104,
-                padding: 4,
-                background: `linear-gradient(135deg, ${t.a}, ${t.b})`,
-                boxShadow: `0 0 36px ${t.b}aa`,
-              }}
-            >
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", borderRadius: 100, background: "#161228" }}>
-                <div style={{ fontFamily: "Koulen", fontSize: 44, lineHeight: 1 }}>{String(d.aura.score)}</div>
-                <div style={{ ...mono, fontSize: 10, color: "rgba(244,241,254,.55)" }}>Aura</div>
-              </div>
+          {/* AURA: the hero stat */}
+          <div style={{ ...glass, display: "flex", alignItems: "center", gap: 28, marginTop: 22, padding: "18px 26px", borderRadius: 24, boxShadow: `inset 0 0 40px ${t.b}33` }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontFamily: "Koulen", fontSize: 92, lineHeight: 0.85, color: "#fff", textShadow: `0 0 30px ${t.b}` }}>{String(d.aura.score)}</div>
+              <div style={{ ...mono, fontSize: 12, color: "rgba(255,255,255,.6)", marginTop: 4 }}>Aura</div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-              <div style={{ ...mono, fontSize: 12, color: "rgba(244,241,254,.55)" }}>Soul worth</div>
-              <div style={{ fontFamily: "Koulen", fontSize: 44, lineHeight: 1, color: t.text }}>{d.aura.tier}</div>
-              <div style={{ display: "flex", marginTop: 10, height: 10, borderRadius: 10, background: "rgba(255,255,255,.1)" }}>
-                <div style={{ width: `${Math.max(4, Math.round(d.aura.progress * 100))}%`, height: 10, borderRadius: 10, background: `linear-gradient(90deg, ${t.a}, ${t.b})` }} />
+              <div style={{ fontFamily: "Koulen", fontSize: 44, lineHeight: 1, color: t.a }}>{d.aura.tier}</div>
+              <div style={{ display: "flex", marginTop: 10, height: 8, borderRadius: 8, background: "rgba(255,255,255,.14)" }}>
+                <div style={{ width: `${Math.max(5, Math.round(d.aura.progress * 100))}%`, height: 8, borderRadius: 8, background: `linear-gradient(90deg, ${t.a}, ${t.b})`, boxShadow: `0 0 12px ${t.b}` }} />
               </div>
-            </div>
-            <div style={{ display: "flex", gap: 30, marginLeft: 8 }}>
-              <Stat value={d.rank ? `#${d.rank}` : "–"} label="Rank" />
-              <Stat value={String(d.owners)} label={d.owners === 1 ? "Owner" : "Owners"} />
+              <div style={{ ...mono, fontSize: 12, color: "rgba(255,255,255,.6)", marginTop: 10 }}>
+                {`${d.rank ? `Rank #${d.rank} of 1,969` : "Unranked"} · ${d.owners} ${d.owners === 1 ? "owner" : "owners"}`}
+              </div>
             </div>
           </div>
 
-          {/* Quote */}
           {quote && (
-            <div style={{ display: "flex", marginTop: 22, gap: 14 }}>
-              <div style={{ fontFamily: "Koulen", fontSize: 70, lineHeight: 0.8, color: "#836ef9" }}>“</div>
-              <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-                <div style={{ display: "flex", fontSize: 24, lineHeight: 1.35, fontWeight: 600, color: "#f4f1fe" }}>{quote}</div>
-                <div style={{ ...mono, fontSize: 11, color: "rgba(244,241,254,.45)", marginTop: 8 }}>
-                  {d.quoteSource === "square" ? "Said in Town Square" : "From its soul"}
-                </div>
-              </div>
+            <div style={{ display: "flex", marginTop: 20, gap: 12 }}>
+              <div style={{ fontFamily: "Koulen", fontSize: 64, lineHeight: 0.8, color: t.a }}>“</div>
+              <div style={{ display: "flex", fontSize: 23, lineHeight: 1.35, fontWeight: 600, flex: 1 }}>{quote}</div>
             </div>
           )}
 
           <div style={{ display: "flex", flex: 1 }} />
 
-          {/* Relations + footer */}
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", gap: 30 }}>
+            <div style={{ display: "flex", gap: 26 }}>
               {d.bestie && <Mini src={bestie} label={`#${d.bestie.tokenId}`} sub="Bestie" color="#5ce68a" />}
-              {d.nemesis && <Mini src={nemesis} label={`#${d.nemesis.tokenId}`} sub="Nemesis" color="#ec4899" />}
-              {!d.bestie && !d.nemesis && (
-                <div style={{ ...mono, fontSize: 13, color: "rgba(244,241,254,.45)" }}>No friends. No enemies. Yet.</div>
-              )}
+              {d.nemesis && <Mini src={nemesis} label={`#${d.nemesis.tokenId}`} sub="Nemesis" color="#ff5fa8" />}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-              <div style={{ display: "flex", alignItems: "center", fontFamily: "Koulen", fontSize: 30, lineHeight: 1 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori */}
-                <img src={SOUL_FLAME_DATA_URL} width={30} height={31} style={{ marginRight: 8 }} alt="" />
-                <span>Chog</span>
-                <span style={{ color: "#a99bfc", marginLeft: 8 }}>Souls</span>
-              </div>
-              <div style={{ ...mono, fontSize: 11, color: "rgba(244,241,254,.5)", marginTop: 4 }}>Every Chog has a soul</div>
-            </div>
+            <div style={{ ...mono, display: "flex", fontSize: 13, color: "rgba(255,255,255,.75)" }}>{`chog-souls.vercel.app · talk to it →`}</div>
           </div>
         </div>
       </div>
