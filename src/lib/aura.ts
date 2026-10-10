@@ -2,7 +2,7 @@ import "server-only";
 import { supabaseAdmin } from "./supabase/server";
 
 // Aura is a Chog's earned reputation. Rules:
-// - social Aura (visitors, the Square, bonds) can only come from others
+// - social Aura (visitors, the Square, bonds, hype, laughs) can only come from others
 // - care Aura comes from its owner showing up, capped per day
 // - $CHOG Aura has diminishing returns and is capped at 30% of the total
 // - Famous and above require social Aura: fame can't be bought
@@ -16,7 +16,9 @@ export type AuraSource =
   | "square_mention"
   | "bond"
   | "chog_feed"
-  | "neglect";
+  | "neglect"
+  | "hype"
+  | "laugh";
 
 export { TIERS, type TierName } from "./tiers";
 import { TIERS, type TierName } from "./tiers";
@@ -27,6 +29,8 @@ const DAILY_CAP: Partial<Record<AuraSource, number>> = {
   owner_chat: 5,
   square_post: 3,
   square_mention: 15,
+  hype: 30,
+  laugh: 25,
 };
 
 const CHOG_SHARE_CAP = 0.3;

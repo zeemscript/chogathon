@@ -1,4 +1,5 @@
 import { parseTokenId } from "@/lib/chogs";
+import { syncHistory } from "@/lib/history";
 import { getOwner } from "@/lib/owners";
 import { syncOwner } from "@/lib/soul";
 import { getStory } from "@/lib/story";
@@ -12,6 +13,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/story/[id]">) {
 
   const owner = await getOwner(tokenId);
   await syncOwner(tokenId, owner).catch((err) => console.error("syncOwner", err)); // notice sales on visit
+  await syncHistory(tokenId).catch((err) => console.error("syncHistory", err)); // owners since mint
   const [story, { data: state }] = await Promise.all([
     getStory(tokenId, owner),
     supabaseAdmin().from("chog_state").select("owner, previous_owner, owner_since").eq("token_id", tokenId).maybeSingle(),

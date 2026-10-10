@@ -5,7 +5,7 @@ import { ImageResponse } from "next/og";
 import sharp from "sharp";
 import { auraLeaderboard, getAura, type Aura } from "./aura";
 import { getChogRaw } from "./chogs";
-import { fetchIpfs } from "./ipfs";
+import { fetchArt } from "./art";
 import { buildPersonality } from "./personality";
 import { supabaseAdmin } from "./supabase/server";
 import { getRelations, listPosts } from "./town";
@@ -52,10 +52,9 @@ const art = new Map<string, string>();
 async function artDataUrl(tokenId: number, px: number): Promise<string | undefined> {
   const key = `${tokenId}:${px}`;
   if (art.has(key)) return art.get(key);
-  const chog = getChogRaw(tokenId);
-  if (!chog) return;
+  if (!getChogRaw(tokenId)) return;
   try {
-    const res = await fetchIpfs(chog.image);
+    const res = await fetchArt(tokenId);
     const png = await sharp(Buffer.from(await res.arrayBuffer())).resize(px, px).png().toBuffer();
     const url = `data:image/png;base64,${png.toString("base64")}`;
     if (art.size > 300) art.delete(art.keys().next().value!);

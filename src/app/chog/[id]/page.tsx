@@ -8,6 +8,7 @@ import AuraPanel from "@/components/AuraPanel";
 import ChatPanel from "@/components/ChatPanel";
 import ChogTabs from "@/components/ChogTabs";
 import FirstMeeting from "@/components/FirstMeeting";
+import MarketStrip from "@/components/MarketStrip";
 import OwnerBadge from "@/components/OwnerBadge";
 import Relations from "@/components/Relations";
 import SoulCardShare from "@/components/SoulCardShare";
@@ -163,6 +164,7 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
                 </span>
               ))}
             </div>
+            <MarketStrip tokenId={tokenId} />
             {/* phones/tablets: notes stay beside the identity */}
             <div className="lg:hidden">{notes}</div>
             <AuraPanel tokenId={tokenId} owner={owner} />

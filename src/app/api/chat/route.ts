@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   const [{ chog, memory }, relations, gossip, aura] = await Promise.all([
     prepareSoul(tokenId, owner),
     getRelations(tokenId),
-    listPosts({ tokenId, limit: 5 }),
+    listPosts({ tokenId, limit: 3 }),
     getAura(tokenId).catch(() => undefined),
   ]);
   const { data: state } = await supabaseAdmin().from("chog_state").select("loyalty").eq("token_id", tokenId).maybeSingle();
@@ -86,8 +86,9 @@ export async function POST(request: NextRequest) {
     .filter((m) =>
       speaker.role === "owner" ? !m.owner?.startsWith("visitor:") : m.owner === memoryOwner,
     )
-    .slice(-20)
-    .map((m) => ({ role: m.role === "user" ? ("user" as const) : ("assistant" as const), content: m.content }));
+    // Token budget: the last 12 turns, each trimmed. Older context lives in events/summary.
+    .slice(-12)
+    .map((m) => ({ role: m.role === "user" ? ("user" as const) : ("assistant" as const), content: m.content.slice(0, 400) }));
 
   let stream;
   try {
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
     model: CHAT_MODEL,
     stream: true,
     temperature: 1.1,
-    max_tokens: 300,
+    max_tokens: 180,
     messages: [
       { role: "system", content: systemPrompt(chog, owner, speaker, memory, { relations, gossip }, standing) },
       ...turns,

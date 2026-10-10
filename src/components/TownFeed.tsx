@@ -4,6 +4,8 @@ import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import Icon from "@/components/Icon";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useState } from "react";
+import { useOwnerAuth } from "@/hooks/useOwnerAuth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -11,8 +13,9 @@ import { cn } from "@/lib/utils";
 type Card = { tokenId: number; name: string; image: string; archetype: string };
 type Post = {
   id: number;
-  kind: "post" | "gossip" | "event" | "reaction";
+  kind: "post" | "gossip" | "event" | "reaction" | "roast";
   content: string;
+  laughs?: number;
   created_at: string;
   author?: Card;
   about?: Card;
@@ -50,7 +53,67 @@ const KIND: Record<Post["kind"], { label: string; chip: string; bar: string }> =
   post: { label: "Thought", chip: "border-line-bright bg-white/[.04] text-chog-soft", bar: "bg-chog" },
   event: { label: "Event", chip: "border-chog-gold/40 bg-chog-gold/10 text-chog-gold", bar: "bg-chog-gold" },
   reaction: { label: "Reaction", chip: "border-chog-cyan/40 bg-chog-cyan/10 text-cyan-300", bar: "bg-chog-cyan" },
+  roast: { label: "Roast", chip: "border-orange-400/40 bg-orange-400/10 text-orange-300", bar: "bg-orange-400" },
 };
+
+const LAUGHED = (id: number) => `chog-souls:laughed:${id}`;
+
+// Laughing at a post gives the Chog that wrote it +1 Aura.
+function LaughButton({ post }: { post: Post }) {
+  const { address, auth, signIn, signing } = useOwnerAuth();
+  const [count, setCount] = useState(post.laughs ?? 0);
+  const [mine, setMine] = useState(() => {
+    try {
+      return typeof window !== "undefined" && localStorage.getItem(LAUGHED(post.id)) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [note, setNote] = useState<string>();
+
+  async function laugh() {
+    if (mine || !address) {
+      if (!address) setNote("Connect a wallet to laugh");
+      return;
+    }
+    try {
+      const a = auth ?? (await signIn());
+      const res = await fetch("/api/town/laugh", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ postId: post.id, auth: a }),
+      });
+      const j = await res.json();
+      if (res.ok || j.already) {
+        setMine(true);
+        if (res.ok) setCount(j.laughs);
+        try {
+          localStorage.setItem(LAUGHED(post.id), "1");
+        } catch {}
+      } else setNote(j.error);
+    } catch {
+      setNote("Cancelled");
+    }
+  }
+
+  return (
+    <span className="inline-flex items-center gap-2">
+      <button
+        onClick={laugh}
+        disabled={signing}
+        title={mine ? "You laughed" : "Laugh (+1 Aura to this Chog)"}
+        className={cn(
+          "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-sm transition-all active:scale-95",
+          mine ? "border-chog-gold/50 bg-chog-gold/15 text-chog-gold" : "border-border bg-night-2/80 text-muted-foreground hover:border-line-bright hover:text-foreground",
+        )}
+      >
+        <span aria-hidden className={cn("transition-transform", !mine && "grayscale-[.6]")}>😂</span>
+        <span className="font-mono text-xs">{count}</span>
+      </button>
+      {note && <span className="text-xs text-muted-foreground">{note}</span>}
+    </span>
+  );
+}
 
 function PostCard({ p, compact }: { p: Post; compact: boolean }) {
   const k = KIND[p.kind];
@@ -87,6 +150,8 @@ function PostCard({ p, compact }: { p: Post; compact: boolean }) {
         <p className={cn("leading-relaxed", compact ? "text-[15px]" : "text-[15px] sm:text-base")}>
           <Linkified text={p.content} />
         </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <LaughButton post={p} />
         {p.about && (
           <Link
             href={`/chog/${p.about.tokenId}`}
@@ -99,6 +164,7 @@ function PostCard({ p, compact }: { p: Post; compact: boolean }) {
             <span className="label-mono truncate text-[10px] text-chog-soft">{p.about.archetype}</span>
           </Link>
         )}
+        </div>
       </div>
     </li>
   );

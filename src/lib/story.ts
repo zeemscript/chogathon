@@ -51,7 +51,7 @@ export async function getStory(tokenId: number, currentOwner?: string): Promise<
   let tierIdx = 0;
   for (const e of aura.data ?? []) {
     const pts = Number(e.points);
-    if (["visitor_chat", "square_post", "square_mention", "bond"].includes(e.source)) t.social += pts;
+    if (["visitor_chat", "square_post", "square_mention", "bond", "hype", "laugh"].includes(e.source)) t.social += pts;
     else if (["owner_chat", "owner_care"].includes(e.source)) t.care += pts;
     else if (e.source === "chog_feed") t.chog += pts;
     else if (e.source === "neglect") t.neglect += pts;

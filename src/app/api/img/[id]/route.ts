@@ -1,11 +1,11 @@
-import { getChogRaw, parseTokenId } from "@/lib/chogs";
-import { fetchIpfs } from "@/lib/ipfs";
+import { fetchArt } from "@/lib/art";
+import { parseTokenId } from "@/lib/chogs";
 
 // Small in-memory cache so hot Chogs (hero, featured) never hit IPFS twice.
 const MAX = 400;
 const cache = new Map<number, { type: string; body: ArrayBuffer }>();
 
-// GET /api/img/:tokenId -> the Chog's image, proxied from IPFS and cached forever.
+// GET /api/img/:tokenId -> the Chog's image (OpenSea CDN, else IPFS), cached forever.
 export async function GET(_req: Request, ctx: RouteContext<"/api/img/[id]">) {
   const tokenId = parseTokenId((await ctx.params).id);
   if (!tokenId) return new Response("not found", { status: 404 });
@@ -13,7 +13,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/api/img/[id]">) {
   let hit = cache.get(tokenId);
   if (!hit) {
     try {
-      const res = await fetchIpfs(getChogRaw(tokenId)!.image);
+      const res = await fetchArt(tokenId);
       hit = { type: res.headers.get("content-type") ?? "image/webp", body: await res.arrayBuffer() };
     } catch (err) {
       console.warn(`img ${tokenId}:`, err instanceof Error ? err.message : err);

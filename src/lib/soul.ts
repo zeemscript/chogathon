@@ -115,7 +115,11 @@ export function systemPrompt(
 ): string {
   const p = buildPersonality(chog.traits);
   const traits = Object.entries(chog.traits).map(([k, v]) => `${k}: ${v}`).join(", ");
-  const events = memory.filter((m) => m.kind !== "chat").map((m) => `- ${m.content}`);
+  // Only the most recent life events; keeps the prompt (and the bill) small.
+  const events = memory
+    .filter((m) => m.kind !== "chat")
+    .slice(-5)
+    .map((m) => `- ${m.content}`);
   const who =
     speaker.role === "owner"
       ? `You are talking to YOUR human, the wallet that holds you (${short(speaker.address!)}). Be yourself with them.`

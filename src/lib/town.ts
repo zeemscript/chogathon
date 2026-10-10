@@ -110,57 +110,111 @@ async function pickTarget(author: number): Promise<number> {
   return t;
 }
 
-type Generated = { content: string; kind: "post" | "gossip"; affinity_delta: number; grudge: string | null };
+type Kind = "post" | "gossip" | "roast";
+type Generated = { content: string; kind: Kind; affinity_delta: number; grudge: string | null };
+
+// The roast-able bits of a Chog: its visible traits, in plain words.
+function looks(c: Chog) {
+  return ["Head", "Eyes", "Mouth", "Body", "Accessory", "Background"]
+    .filter((k) => c.traits[k] && c.traits[k] !== "None")
+    .map((k) => `${k.toLowerCase()}: ${c.traits[k]}`)
+    .join(", ");
+}
 
 function describe(c: Chog) {
   const p = buildPersonality(c.traits);
-  const look = ["Head", "Eyes", "Body", "Accessory"]
-    .map((k) => c.traits[k])
-    .filter((v) => v && v !== "None")
-    .join(", ");
-  return `${c.name}, ${p.archetype} (${p.temperament.join(", ")}). Look: ${look || c.traits.Tier}. Voice: ${p.voice}.`;
+  return `#${c.tokenId} ${p.archetype}, ${p.temperament.join("/")}; ${looks(c) || c.traits.Tier}; voice: ${p.voice}`;
 }
 
-async function generateWithAI(author: Chog, target: Chog, rel: Relation | undefined, recent: TownPost[]) {
-  const feeling = rel
-    ? `Current feelings about ${target.name}: affinity ${rel.affinity} (-100 hate, 100 love)${rel.grudge ? `, grudge: "${rel.grudge}"` : ""}.`
-    : `You have never talked about ${target.name} before.`;
-  const res = await deepseek.chat.completions.create({
-    model: CHAT_MODEL,
-    temperature: 1.2,
-    max_tokens: 200,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
-          "You write posts for Town Square, a public feed where Chog NFTs (chaotic little creatures on Monad) gossip about each other. " +
-          "Posts are short (max 200 chars), funny, petty, in character, like a social media post. No hashtags. At most one emoji. " +
-          'Reply with JSON: {"content": string, "kind": "post"|"gossip", "affinity_delta": integer -25..25, "grudge": string|null}. ' +
-          "affinity_delta is how this post changes the author's feelings toward the target. grudge is a short reason if a grudge forms, else null.",
-      },
-      {
-        role: "user",
-        content: [
-          `Author: ${describe(author)}`,
-          `Target: ${describe(target)}`,
-          feeling,
-          recent.length ? `Recent Square posts:\n${recent.map((p) => `- #${p.token_id}: ${p.content}`).join("\n")}` : "",
-          `Write ${author.name}'s next post. Mention ${target.name} by name (as #${target.tokenId}).`,
-        ]
-          .filter(Boolean)
-          .join("\n\n"),
-      },
-    ],
+// Same text on every call, so DeepSeek's prompt cache bills it at the cheap
+// cached rate. Everything that varies goes in the short user message.
+const SQUARE_SYSTEM =
+  "You write one post for Town Square, a public feed where Chog NFTs (chaotic creatures on Monad) talk about each other. " +
+  "Be genuinely funny: specific, petty, unexpected, like the best replies on crypto Twitter. Max 180 chars. No hashtags. At most one emoji. " +
+  "A roast mocks the target's actual traits (cap, eyes, outfit, item, background) in a clever way, never slurs or real-world hate. " +
+  'Reply only with JSON: {"content":string,"kind":"post"|"gossip"|"roast","affinity_delta":int -25..25,"grudge":string|null}. ' +
+  "affinity_delta = how the post shifts the author's feelings to the target. grudge = short reason if one forms, else null.";
+
+// Skip the AI for a while after it fails (e.g. no credit) instead of paying the
+// timeout on every post.
+let aiDownUntil = 0;
+
+async function generateWithAI(author: Chog, target: Chog, rel: Relation | undefined, recent: TownPost[], mode: Kind) {
+  if (Date.now() < aiDownUntil) throw new Error("ai cooling down");
+  const feeling = rel ? `feelings to target: ${rel.affinity}${rel.grudge ? `, grudge: ${rel.grudge}` : ""}` : "first time mentioning target";
+  try {
+    const res = await deepseek.chat.completions.create({
+      model: CHAT_MODEL,
+      temperature: 1.25,
+      max_tokens: 110,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: SQUARE_SYSTEM },
+        {
+          role: "user",
+          content: [
+            `author: ${describe(author)}`,
+            `target: ${describe(target)}`,
+            feeling,
+            recent.length ? `recent (don't repeat): ${recent.map((p) => p.content).join(" | ")}` : "",
+            `write a ${mode} by #${author.tokenId}${mode === "post" ? "" : ` about #${target.tokenId}`}`,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        },
+      ],
+    });
+    const out = JSON.parse(res.choices[0]?.message?.content ?? "{}") as Partial<Generated>;
+    if (!out.content) throw new Error("empty post");
+    return {
+      content: out.content.slice(0, 240),
+      kind: (["post", "gossip", "roast"] as Kind[]).includes(out.kind as Kind) ? (out.kind as Kind) : mode,
+      affinity_delta: Number(out.affinity_delta) || 0,
+      grudge: out.grudge ?? null,
+    } satisfies Generated;
+  } catch (err) {
+    aiDownUntil = Date.now() + 10 * 60_000;
+    throw err;
+  }
+}
+
+// Trait-aware roasts for when the AI is off. {t} = target id, {x} = the trait.
+const ROASTS: [string, string[]][] = [
+  ["Head", [
+    "#{t} wearing a {x} like it's a personality. It's not. It's a hat.",
+    "Saw #{t}'s {x} today. Bold choice. Wrong, but bold.",
+    "#{t} bought a {x} and stopped developing as a person.",
+  ]],
+  ["Eyes", [
+    "#{t} has {x} eyes and still can't see it's mid.",
+    "#{t}'s {x} eyes are the only thing on Monad that never sees a pump.",
+  ]],
+  ["Body", [
+    "#{t} out here in a {x} like it has somewhere to be. Buddy, you live in a JPEG.",
+    "Who told #{t} the {x} was a good idea? I need names.",
+  ]],
+  ["Mouth", [
+    "#{t} with that {x} mouth talking alpha again. Sit down.",
+    "Every time #{t} opens its {x} mouth, the floor drops 2%.",
+  ]],
+  ["Accessory", [
+    "#{t} carries a {x} everywhere. Emotional support item?",
+    "#{t} thinks the {x} makes it interesting. The {x} is doing all the work.",
+  ]],
+  ["Background", [
+    "#{t}'s background is {x}. Even the background is trying harder than #{t}.",
+  ]],
+  ["Tier", [
+    "#{t} is {x}. Says a lot. Says nothing, actually.",
+  ]],
+];
+
+function roastFallback(target: Chog): string | undefined {
+  const options = ROASTS.flatMap(([trait, lines]) => {
+    const v = target.traits[trait];
+    return v && v !== "None" && v !== "1:1" ? lines.map((l) => l.replaceAll("{x}", v).replaceAll("{t}", String(target.tokenId))) : [];
   });
-  const out = JSON.parse(res.choices[0]?.message?.content ?? "{}") as Partial<Generated>;
-  if (!out.content) throw new Error("empty post");
-  return {
-    content: out.content.slice(0, 280),
-    kind: out.kind === "post" ? "post" : "gossip",
-    affinity_delta: Number(out.affinity_delta) || 0,
-    grudge: out.grudge ?? null,
-  } satisfies Generated;
+  return options.length ? options[rand(options.length)] : undefined;
 }
 
 // No AI? The Square keeps talking with in-character templates.
@@ -187,7 +241,9 @@ const SOLO = [
   "Hot take: {dislike} should be illegal on Monad.",
 ];
 
-function generateFallback(author: Chog, target: Chog, rel: Relation | undefined): Generated {
+function generateFallback(author: Chog, target: Chog, rel: Relation | undefined, mode: Kind): Generated {
+  const roast = mode === "roast" ? roastFallback(target) : undefined;
+  if (roast) return { content: roast, kind: "roast", affinity_delta: -(6 + rand(8)), grudge: null };
   const p = buildPersonality(author.traits);
   const mean = rel ? rel.affinity < 0 || (rel.affinity < 20 && Math.random() < 0.4) : Math.random() < 0.55;
   const solo = Math.random() < 0.15;
@@ -212,23 +268,27 @@ export async function townTick(): Promise<TownPost[]> {
   const target = getChog(targetId)!;
   await ensureChogs([authorId, targetId]);
 
-  const [rels, recent] = await Promise.all([getRelations(authorId), listPosts({ limit: 6 })]);
+  const [rels, recent] = await Promise.all([getRelations(authorId), listPosts({ limit: 3 })]);
   const rel = rels.find((r) => r.other_token_id === targetId);
 
+  // About a third of posts are roasts; the rest gossip, plus a few solo thoughts.
+  const r = Math.random();
+  const mode: Kind = r < 0.35 ? "roast" : r < 0.9 ? "gossip" : "post";
   let gen: Generated;
   try {
-    gen = await generateWithAI(author, target, rel, recent);
+    gen = await generateWithAI(author, target, rel, recent, mode);
   } catch {
-    gen = generateFallback(author, target, rel);
+    gen = generateFallback(author, target, rel, mode);
   }
 
   const solo = gen.kind === "post" && !gen.content.includes(`#${targetId}`);
   const db = supabaseAdmin();
-  const { data: post, error } = await db
-    .from("town_posts")
-    .insert({ token_id: authorId, about_token_id: solo ? null : targetId, kind: gen.kind, content: gen.content })
-    .select()
-    .single();
+  const row = { token_id: authorId, about_token_id: solo ? null : targetId, kind: gen.kind, content: gen.content };
+  let { data: post, error } = await db.from("town_posts").insert(row).select().single();
+  if (error?.code === "23514" && gen.kind === "roast") {
+    // Database not migrated for roasts yet (0003): store it as gossip.
+    ({ data: post, error } = await db.from("town_posts").insert({ ...row, kind: "gossip" }).select().single());
+  }
   if (error) throw new Error(`townTick: ${error.message}`);
 
   const created = [post as TownPost];

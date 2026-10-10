@@ -3,7 +3,7 @@
 Your checklist. Each item says why it matters and exactly what to do.
 Tick items off as you go (`[ ]` → `[x]`). Never put private keys or seed phrases here.
 
-Last updated: 2026-10-10 (added Etherscan key)
+Last updated: 2026-10-10
 
 ## Blocking features
 
@@ -14,11 +14,11 @@ Last updated: 2026-10-10 (added Etherscan key)
 - [ ] **Test $CHOG feeding once** (treasury is set ✓). You need a little $CHOG + MON for gas.
       Open any Chog page and press Feed 100 $CHOG. Restart `npm run dev` first if it still says "opens soon".
 
-- [ ] **Etherscan API key** (free; gives every Chog's full ownership history for "Its Story")
-  - Sign up at https://etherscan.io/register → API Dashboard → Add → copy the key.
-    One key works for Monad too (Etherscan API v2, chain 143).
-  - Add to `.env.local`: `ETHERSCAN_API_KEY=...` and tell me, so I also add it on Vercel.
-  - Until then, stories only include owners we've seen since Chog Souls launched.
+- [ ] **Run migration `0003_boost_roast_market.sql`** in the Supabase SQL Editor
+      (https://supabase.com/dashboard/project/kvmhlxrtfpqhzjozctnm/sql/new → paste → Run).
+      Needed for Hype, laughs, roasts and fast images.
+- [ ] **Add `OPENSEA_API_KEY` to Vercel** when we next deploy (it's already in `.env.local`).
+      Optional: regenerate the key on OpenSea since it was shared in chat.
 
 ## Testing
 
@@ -41,7 +41,7 @@ Last updated: 2026-10-10 (added Etherscan key)
 - [ ] **WalletConnect project ID** (optional, enables mobile wallets): https://cloud.reown.com →
       new project → set `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`.
 - [ ] **Check whether the submission can be edited after submitting** (Chog World shows "UPDATE 29").
-
+¬
 ## Done
 
 - [x] Supabase project created
