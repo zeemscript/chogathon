@@ -7,9 +7,11 @@ import { Suspense } from "react";
 import AuraPanel from "@/components/AuraPanel";
 import ChatPanel from "@/components/ChatPanel";
 import ChogTabs from "@/components/ChogTabs";
+import FirstMeeting from "@/components/FirstMeeting";
 import OwnerBadge from "@/components/OwnerBadge";
 import Relations from "@/components/Relations";
 import SoulCardShare from "@/components/SoulCardShare";
+import StoryTimeline from "@/components/StoryTimeline";
 import TownFeed from "@/components/TownFeed";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getChog, parseTokenId } from "@/lib/chogs";
@@ -106,6 +108,8 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
         <span className="inline-flex items-center gap-1.5"><Icon icon={ArrowLeft01Icon} size={14} />All Chogs</span>
       </Link>
 
+      <FirstMeeting tokenId={tokenId} name={chog.name} temperament={soul.temperament} owner={owner} />
+
       {/* PROFILE HEADER */}
       <section className="relative overflow-hidden rounded-3xl border border-line-bright bg-card shadow-card">
         {/* blurred art backdrop */}
@@ -172,6 +176,7 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
           <ChatPanel tokenId={tokenId} name={chog.name} owner={owner} />
         </div>
         <ChogTabs
+          story={<StoryTimeline tokenId={tokenId} />}
           counts={{ rivals: relations.length }}
           rivals={<Relations relations={relations} />}
           gossip={<TownFeed tokenId={tokenId} compact limit={8} />}

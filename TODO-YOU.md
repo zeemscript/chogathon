@@ -3,7 +3,7 @@
 Your checklist. Each item says why it matters and exactly what to do.
 Tick items off as you go (`[ ]` → `[x]`). Never put private keys or seed phrases here.
 
-Last updated: 2026-10-10
+Last updated: 2026-10-10 (added Etherscan key)
 
 ## Blocking features
 
@@ -13,6 +13,12 @@ Last updated: 2026-10-10
 
 - [ ] **Test $CHOG feeding once** (treasury is set ✓). You need a little $CHOG + MON for gas.
       Open any Chog page and press Feed 100 $CHOG. Restart `npm run dev` first if it still says "opens soon".
+
+- [ ] **Etherscan API key** (free; gives every Chog's full ownership history for "Its Story")
+  - Sign up at https://etherscan.io/register → API Dashboard → Add → copy the key.
+    One key works for Monad too (Etherscan API v2, chain 143).
+  - Add to `.env.local`: `ETHERSCAN_API_KEY=...` and tell me, so I also add it on Vercel.
+  - Until then, stories only include owners we've seen since Chog Souls launched.
 
 ## Testing
 

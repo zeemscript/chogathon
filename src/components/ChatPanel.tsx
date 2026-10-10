@@ -17,6 +17,13 @@ export default function ChatPanel({ tokenId, name, owner }: { tokenId: number; n
   const [left, setLeft] = useState<{ remaining: number; limit: number }>();
   const listRef = useRef<HTMLDivElement>(null);
 
+  // The first-meeting screen can hand us an opening line.
+  useEffect(() => {
+    const onPrefill = (e: Event) => setInput(String((e as CustomEvent).detail ?? ""));
+    window.addEventListener("chog:prefill", onPrefill);
+    return () => window.removeEventListener("chog:prefill", onPrefill);
+  }, []);
+
   // Scroll only the message list (scrollIntoView would move the whole page).
   useEffect(() => {
     const el = listRef.current;

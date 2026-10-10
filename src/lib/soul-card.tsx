@@ -89,7 +89,11 @@ export async function getCardData(tokenId: number): Promise<CardData> {
     auraLeaderboard(1969),
     getRelations(tokenId).catch(() => []),
     listPosts({ tokenId, limit: 20 }).catch(() => []),
-    supabaseAdmin().from("owner_history").select("id", { count: "exact", head: true }).eq("token_id", tokenId),
+    supabaseAdmin()
+      .from("owner_history")
+      .select("id", { count: "exact", head: true })
+      .eq("token_id", tokenId)
+      .neq("from_address", "0x0000000000000000000000000000000000000000"), // mints aren't a new owner
   ]);
   const rankIdx = board.findIndex((r) => r.tokenId === tokenId);
   const sorted = [...relations].sort((a, b) => b.affinity - a.affinity);

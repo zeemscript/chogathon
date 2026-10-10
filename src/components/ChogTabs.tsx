@@ -2,15 +2,17 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// The Chog's world, one tab at a time: who it loves and hates, what's being
+// The Chog's world, one tab at a time: its life story, who it loves and hates, what's being
 // said, its shareable card, and the raw traits its soul was born from.
 export default function ChogTabs({
+  story,
   rivals,
   gossip,
   card,
   traits,
   counts,
 }: {
+  story: React.ReactNode;
   rivals: React.ReactNode;
   gossip: React.ReactNode;
   card: React.ReactNode;
@@ -18,8 +20,9 @@ export default function ChogTabs({
   counts: { rivals: number };
 }) {
   return (
-    <Tabs defaultValue="rivals" className="gap-4">
+    <Tabs defaultValue="story" className="gap-4">
       <TabsList className="w-full">
+        <TabsTrigger value="story">Story</TabsTrigger>
         <TabsTrigger value="rivals">
           Rivals{counts.rivals > 0 && <span className="text-[10px] opacity-70">{counts.rivals}</span>}
         </TabsTrigger>
@@ -27,6 +30,7 @@ export default function ChogTabs({
         <TabsTrigger value="card">Soul card</TabsTrigger>
         <TabsTrigger value="traits">Traits</TabsTrigger>
       </TabsList>
+      <TabsContent value="story" className="animate-in duration-300 fade-in">{story}</TabsContent>
       <TabsContent value="rivals" className="animate-in duration-300 fade-in">{rivals}</TabsContent>
       <TabsContent value="gossip" className="animate-in duration-300 fade-in">{gossip}</TabsContent>
       <TabsContent value="card" className="animate-in duration-300 fade-in">{card}</TabsContent>
