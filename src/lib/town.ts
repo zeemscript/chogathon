@@ -29,9 +29,14 @@ export type Relation = {
 const rand = (n: number) => Math.floor(Math.random() * n);
 const clamp = (n: number) => Math.max(-100, Math.min(100, Math.round(n)));
 
-export async function listPosts({ limit = 40, tokenId }: { limit?: number; tokenId?: number } = {}) {
-  let q = supabaseAdmin().from("town_posts").select("*").order("created_at", { ascending: false }).limit(limit);
+export async function listPosts({
+  limit = 40,
+  tokenId,
+  before,
+}: { limit?: number; tokenId?: number; before?: number } = {}) {
+  let q = supabaseAdmin().from("town_posts").select("*").order("id", { ascending: false }).limit(limit);
   if (tokenId) q = q.or(`token_id.eq.${tokenId},about_token_id.eq.${tokenId}`);
+  if (before) q = q.lt("id", before);
   const { data, error } = await q;
   if (error) throw new Error(`listPosts: ${error.message}`);
   return data as TownPost[];
@@ -245,4 +250,58 @@ export async function tickIfQuiet(minGapMs = 3 * 60_000) {
   const [last] = await listPosts({ limit: 1 });
   if (last && Date.now() - Date.parse(last.created_at) < minGapMs) return [];
   return townTick();
+}
+
+export type TownStats = {
+  postsToday: number;
+  bonds: number;
+  feudsCount: number;
+  trending: { tokenId: number; mentions: number }[];
+  feuds: { a: number; b: number; affinity: number; grudge: string | null }[];
+  besties: { a: number; b: number; affinity: number }[];
+};
+
+// Sidebar data for the Square: who's being talked about and who's fighting.
+export async function townStats(): Promise<TownStats> {
+  const db = supabaseAdmin();
+  const since = new Date(Date.now() - 86_400_000).toISOString();
+  const [posts, mentions, enemies, friends, bonds, feudsCount] = await Promise.all([
+    db.from("town_posts").select("id", { count: "exact", head: true }).gte("created_at", since),
+    db.from("aura_events").select("token_id").eq("source", "square_mention").gte("created_at", since).limit(2000),
+    db.from("chog_relations").select("token_id, other_token_id, affinity, grudge").lt("affinity", -10).order("affinity").limit(30),
+    db.from("chog_relations").select("token_id, other_token_id, affinity").gt("affinity", 10).order("affinity", { ascending: false }).limit(30),
+    db.from("chog_relations").select("token_id", { count: "exact", head: true }).neq("affinity", 0),
+    db.from("chog_relations").select("token_id", { count: "exact", head: true }).lt("affinity", -10),
+  ]);
+
+  const counts = new Map<number, number>();
+  for (const m of mentions.data ?? []) counts.set(m.token_id, (counts.get(m.token_id) ?? 0) + 1);
+  const trending = [...counts]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([tokenId, n]) => ({ tokenId, mentions: n }));
+
+  // One entry per pair, strongest feeling first.
+  const pairs = <T extends { token_id: number; other_token_id: number }>(rows: T[]) => {
+    const seen = new Set<string>();
+    return rows.filter((r) => {
+      const k = [r.token_id, r.other_token_id].sort((x, y) => x - y).join(":");
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  };
+
+  return {
+    postsToday: posts.count ?? 0,
+    bonds: bonds.count ?? 0,
+    feudsCount: feudsCount.count ?? 0,
+    trending,
+    feuds: pairs(enemies.data ?? [])
+      .slice(0, 4)
+      .map((r) => ({ a: r.token_id, b: r.other_token_id, affinity: r.affinity, grudge: r.grudge })),
+    besties: pairs(friends.data ?? [])
+      .slice(0, 3)
+      .map((r) => ({ a: r.token_id, b: r.other_token_id, affinity: r.affinity })),
+  };
 }

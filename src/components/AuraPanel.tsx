@@ -122,13 +122,13 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
   const total = aura ? Math.max(1, aura.social + aura.care + aura.chog) : 1;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-line-bright bg-card shadow-card">
-      <div className="flex flex-wrap items-center gap-5 p-5">
+    <section className="rounded-2xl border border-line-bright bg-night/55 backdrop-blur-md">
+      <div className="flex flex-wrap items-center gap-5 p-4 sm:p-5">
         {/* Aura orb */}
-        <div className="relative grid size-24 shrink-0 place-items-center">
+        <div className="relative grid size-20 shrink-0 place-items-center sm:size-[88px]">
           <div
             className={cn("absolute inset-0 animate-[spin_9s_linear_infinite] rounded-full bg-gradient-to-br p-[3px]", style.ring)}
-            style={{ boxShadow: `0 0 38px ${style.glow}` }}
+            style={{ boxShadow: `0 0 34px ${style.glow}` }}
           >
             <div className="size-full rounded-full bg-card" />
           </div>
@@ -138,15 +138,17 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
           </div>
         </div>
 
-        <div className="min-w-0 flex-1 space-y-2">
-          <p className="label-mono text-chog-soft">✦ Soul worth</p>
-          <p className={cn("font-display text-3xl leading-none", style.text)}>{aura?.tier ?? "…"}</p>
+        <div className="min-w-[200px] flex-1 space-y-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+            <p className={cn("font-display text-3xl leading-none", style.text)}>{aura?.tier ?? "…"}</p>
+            <p className="label-mono text-[10px] text-muted-foreground">Soul worth</p>
+          </div>
           {aura?.next && (
-            <div className="space-y-1">
+            <>
               <div className="h-2 overflow-hidden rounded-full bg-white/10">
                 <div
                   className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700", style.ring)}
-                  style={{ width: `${Math.round(aura.progress * 100)}%` }}
+                  style={{ width: `${Math.max(3, Math.round(aura.progress * 100))}%` }}
                 />
               </div>
               <p className="text-xs text-muted-foreground">
@@ -154,45 +156,53 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
                   ? `Needs ${aura.next.social} social Aura to become ${aura.next.name}. Only others can make it famous.`
                   : `${aura.next.min - aura.score} Aura to ${aura.next.name}`}
               </p>
-            </div>
+            </>
           )}
         </div>
       </div>
 
       {aura && (
-        <div className="grid gap-3 border-t border-border bg-night-2/50 p-5 sm:grid-cols-3">
-          <Bar label="Social · from others" value={aura.social} total={total} cls="bg-chog-pink" />
-          <Bar label="Care · from its human" value={aura.care} total={total} cls="bg-chog-ok" />
+        <div className="grid grid-cols-3 gap-4 border-t border-border px-4 py-3.5 sm:px-5">
+          <Bar label="Social" value={aura.social} total={total} cls="bg-chog-pink" />
+          <Bar label="Care" value={aura.care} total={total} cls="bg-chog-ok" />
           <Bar
-            label="$CHOG · max 30%"
+            label="$CHOG ≤30%"
             value={aura.chog}
             total={total}
             cls="bg-chog-gold"
-            note={aura.chogRaw > aura.chog ? `(capped from ${aura.chogRaw})` : undefined}
+            note={aura.chogRaw > aura.chog ? `/${aura.chogRaw}` : undefined}
           />
         </div>
       )}
 
       {aura?.fading && (
-        <p className="border-t border-chog-pink/30 bg-chog-pink/10 px-5 py-3 text-sm text-pink-200">
+        <p className="border-t border-chog-pink/30 bg-chog-pink/10 px-5 py-2.5 text-sm text-pink-200">
           Its human hasn&apos;t checked in for {aura.idleDays} days. Its Aura is fading ({aura.neglect}).
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-border p-4">
+      <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-3 sm:px-5">
         {isOwner ? (
           <Button size="sm" variant="ok" onClick={care} disabled={!!busy || signing}>
             {busy === "care" || signing ? "…" : "Daily check-in"}
           </Button>
         ) : (
-          <span className="label-mono text-[10px] text-muted-foreground">Talk to it to make it famous ✦</span>
+          <span className="label-mono mr-auto text-[10px] text-muted-foreground">Visitors make it famous ✦ say hi</span>
         )}
         {TREASURY ? (
-          [100, 500, 1000].map((n) => (
-            <Button key={n} size="sm" variant="outline" onClick={() => feed(n)} disabled={!!busy}>
-              {busy === `feed${n}` ? "…" : `Feed ${n} $CHOG`}
-            </Button>
-          ))
+          <div className="ml-auto flex items-center overflow-hidden rounded-[10px] border border-line-bright">
+            <span className="label-mono px-3 text-[10px] text-chog-gold">Feed $CHOG</span>
+            {[100, 500, 1000].map((n) => (
+              <button
+                key={n}
+                onClick={() => feed(n)}
+                disabled={!!busy}
+                className="h-9 cursor-pointer border-l border-line-bright px-3 font-mono text-xs transition-colors hover:bg-chog-gold/15 hover:text-chog-gold disabled:opacity-50"
+              >
+                {busy === `feed${n}` ? "…" : n}
+              </button>
+            ))}
+          </div>
         ) : (
           <span className="label-mono ml-auto text-[10px] text-muted-foreground/60">$CHOG feeding opens soon</span>
         )}

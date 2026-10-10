@@ -7,7 +7,8 @@ import { listPosts, tickIfQuiet } from "@/lib/town";
 // Reading the feed also keeps it alive: if it's been quiet, a Chog speaks up.
 export async function GET(request: NextRequest) {
   const tokenId = parseTokenId(request.nextUrl.searchParams.get("tokenId"));
-  const posts = await listPosts({ tokenId, limit: tokenId ? 12 : 40 });
+  const before = Number(request.nextUrl.searchParams.get("before")) || undefined;
+  const posts = await listPosts({ tokenId, limit: tokenId ? 12 : 20, before });
 
   after(() => tickIfQuiet().catch((err) => console.error("town tick failed", err)));
 

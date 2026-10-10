@@ -23,9 +23,9 @@ export default function ChatPanel({ tokenId, name, owner }: { tokenId: number; n
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [lines]);
 
-  async function send(e: React.FormEvent) {
-    e.preventDefault();
-    const message = input.trim();
+  async function send(e?: React.FormEvent, preset?: string) {
+    e?.preventDefault();
+    const message = (preset ?? input).trim();
     if (!message || busy) return;
     setInput("");
     setError(undefined);
@@ -61,54 +61,92 @@ export default function ChatPanel({ tokenId, name, owner }: { tokenId: number; n
     }
   }
 
+  const avatar = `/api/img/${tokenId}`;
+  const prompts = isOwner
+    ? ["gm, did you miss me?", "Who's your nemesis?", "What did the Square say about you?", "Tell me a secret"]
+    : ["gm stranger", "Who's your human?", "Who do you hate the most?", "Why should I trust you?"];
+
   return (
-    <section className="overflow-hidden rounded-2xl border border-line-bright bg-card shadow-card">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-night-2/70 px-5 py-4">
-        <div>
-          <p className="label-mono text-chog-soft">✦ Talk</p>
-          <h2 className="font-display text-2xl">Say gm to {name}</h2>
+    <section className="flex flex-col overflow-hidden rounded-2xl border border-line-bright bg-card shadow-card">
+      <div className="flex items-center gap-3 border-b border-border bg-night-2/70 px-4 py-3.5">
+        <div className="relative shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element -- proxied IPFS image */}
+          <img src={avatar} alt="" className="size-11 rounded-xl border border-line-bright object-cover" />
+          <span className="absolute -right-0.5 -bottom-0.5 size-3 rounded-full border-2 border-night-2 bg-chog-ok" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-xl leading-none">{name}</h2>
+          <p className="label-mono mt-1 truncate text-[10px] text-muted-foreground">
+            {busy ? "typing…" : isOwner ? (auth ? "Talking to its human" : "Your Chog · sign in to be recognised") : "Visitor · it may not trust you"}
+          </p>
         </div>
         {isOwner && !auth ? (
           <Button size="sm" variant="ok" onClick={signIn} disabled={signing}>
-            {signing ? "Check your wallet…" : "Sign in as its human"}
+            {signing ? "Check wallet…" : "Sign in"}
           </Button>
         ) : (
-          <span
-            className={cn(
-              "label-mono rounded-full border px-3 py-1 text-[10.5px]",
-              isOwner ? "border-chog-ok/40 bg-chog-ok/10 text-chog-ok" : "border-border text-muted-foreground",
-            )}
-          >
-            {isOwner ? "You're its human" : "Visitor · it may not trust you"}
-          </span>
+          left && (
+            <span
+              className={cn(
+                "label-mono shrink-0 rounded-full border px-2.5 py-1 text-[10px]",
+                left.remaining <= 3 ? "border-chog-pink/40 text-pink-300" : "border-border text-muted-foreground",
+              )}
+            >
+              {left.remaining}/{left.limit} left
+            </span>
+          )
         )}
       </div>
 
-      <div ref={listRef} className="h-[360px] space-y-3 overflow-y-auto px-5 py-5">
+      <div ref={listRef} className="h-[380px] space-y-3 overflow-y-auto px-4 py-5 sm:h-[440px]">
         {lines.length === 0 && (
-          <div className="grid h-full place-items-center text-center">
+          <div className="flex h-full flex-col items-center justify-center gap-5 text-center">
             <div>
-              <p className="font-display text-3xl text-white/20">It&apos;s listening</p>
-              <p className="mt-1 text-sm text-muted-foreground">Say something. It remembers.</p>
+              <p className="font-display text-4xl text-white/20">It&apos;s listening</p>
+              <p className="mt-1 text-sm text-muted-foreground">Say something. It remembers. Forever.</p>
+            </div>
+            <div className="flex max-w-sm flex-wrap justify-center gap-2">
+              {prompts.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => send(undefined, q)}
+                  disabled={busy}
+                  className="cursor-pointer rounded-full border border-line-bright bg-white/[.04] px-3.5 py-2 text-sm text-chog-soft transition-colors hover:border-chog hover:bg-chog/15 hover:text-white"
+                >
+                  {q}
+                </button>
+              ))}
             </div>
           </div>
         )}
         {lines.map((l, i) => (
-          <p
+          <div
             key={i}
-            className={cn(
-              "w-fit max-w-[85%] animate-in rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed duration-300 fade-in slide-in-from-bottom-2",
-              l.from === "you"
-                ? "ml-auto rounded-br-md bg-chog text-white shadow-hard"
-                : "rounded-bl-md border border-border bg-night-3",
-            )}
+            className={cn("flex animate-in items-end gap-2 duration-300 fade-in slide-in-from-bottom-2", l.from === "you" && "flex-row-reverse")}
           >
-            {l.text || <span className="inline-flex gap-1 py-1">{[0, 1, 2].map((d) => <span key={d} className="size-1.5 animate-pulse-dot rounded-full bg-chog-soft" style={{ animationDelay: `${d * 0.2}s` }} />)}</span>}
-          </p>
+            {l.from === "chog" && (
+              // eslint-disable-next-line @next/next/no-img-element -- proxied IPFS image
+              <img src={avatar} alt="" className="size-7 shrink-0 rounded-lg object-cover" />
+            )}
+            <p
+              className={cn(
+                "w-fit max-w-[80%] rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed",
+                l.from === "you" ? "rounded-br-md bg-chog text-white shadow-hard" : "rounded-bl-md border border-border bg-night-3",
+              )}
+            >
+              {l.text || (
+                <span className="inline-flex gap-1 py-1">
+                  {[0, 1, 2].map((d) => (
+                    <span key={d} className="size-1.5 animate-pulse-dot rounded-full bg-chog-soft" style={{ animationDelay: `${d * 0.2}s` }} />
+                  ))}
+                </span>
+              )}
+            </p>
+          </div>
         ))}
       </div>
 
-      {error && <p className="px-5 pb-2 text-sm text-destructive">{error}</p>}
+      {error && <p className="border-t border-border px-4 py-2.5 text-sm text-pink-200">{error}</p>}
       <form onSubmit={send} className="flex gap-2 border-t border-border bg-night-2/50 p-3">
         <Input
           value={input}

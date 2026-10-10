@@ -38,14 +38,11 @@ export default function SoulCardShare({ tokenId }: { tokenId: number }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-line-bright bg-card shadow-card">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-night-2/70 px-5 py-4">
-        <div>
-          <p className="label-mono text-chog-soft">✦ Soul card</p>
-          <h2 className="font-display text-2xl">Show off this soul</h2>
-        </div>
+        <h2 className="font-display text-2xl">Show off this soul</h2>
         <span className="label-mono text-[10px] text-muted-foreground">Updates as its Aura grows</span>
       </div>
-      <div className="p-4">
-        <div className="relative aspect-[1200/630] overflow-hidden rounded-xl border border-border bg-night-3">
+      <div className="p-4 [perspective:1200px]">
+        <div className="group/card shine relative aspect-[1200/630] overflow-hidden rounded-xl border border-line-bright bg-night-3 shadow-[0_24px_60px_-24px_rgba(131,110,249,.7)] transition-transform duration-500 ease-out hover:[transform:rotateX(5deg)_rotateY(-7deg)_scale(1.02)]">
           {!loaded && <div className="absolute inset-0 animate-pulse bg-night-3" />}
           {/* eslint-disable-next-line @next/next/no-img-element -- generated PNG */}
           <img
