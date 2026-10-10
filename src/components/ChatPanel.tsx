@@ -1,15 +1,46 @@
 "use client";
 
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CHAT_PACK_SIZE, friendly, PRICES, TREASURY, useChogPay } from "@/hooks/useChogPay";
 import { useOwnerAuth } from "@/hooks/useOwnerAuth";
 import { cn } from "@/lib/utils";
 
 type Line = { from: "you" | "chog"; text: string };
 
 export default function ChatPanel({ tokenId, name, owner }: { tokenId: number; name: string; owner?: string }) {
-  const { isOwner, auth, signIn, signing } = useOwnerAuth(owner);
+  const { address, isOwner, auth, signIn, signing } = useOwnerAuth(owner);
+  const pay = useChogPay();
+  const { openConnectModal } = useConnectModal();
+
+  // Out of free chats: buy a pack with $CHOG (paid to the treasury).
+  async function buyChats() {
+    if (!address || !TREASURY) {
+      openConnectModal?.();
+      return;
+    }
+    const t = toast.loading(`Buying ${CHAT_PACK_SIZE} chats…`, { description: `Confirm ${PRICES.chatPack} $CHOG in your wallet` });
+    try {
+      const a = auth ?? (await signIn());
+      const txHash = await pay(TREASURY, PRICES.chatPack);
+      toast.loading(`Buying ${CHAT_PACK_SIZE} chats…`, { id: t, description: "Waiting for Monad" });
+      const res = await fetch("/api/chats/buy", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ txHash, auth: a }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error);
+      setError(undefined);
+      setLeft(undefined);
+      toast.success(`+${j.added} chats`, { id: t, description: `${j.credits} bought chats left. Keep talking.` });
+    } catch (err) {
+      toast.error(friendly(err, "Purchase failed"), { id: t, description: undefined });
+    }
+  }
   const [lines, setLines] = useState<Line[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -56,10 +87,20 @@ export default function ChatPanel({ tokenId, name, owner }: { tokenId: number; n
       });
       if (!res.ok || !res.body) {
         const j = await res.json().catch(() => null);
-        if (res.status === 429) setLeft({ remaining: 0, limit: j?.limit ?? 0 });
+        if (res.status === 429) {
+          setLeft({ remaining: 0, limit: j?.limit ?? 0 });
+          if (j?.canBuy && TREASURY) {
+            toast("Out of chats for today", {
+              description: `Get ${CHAT_PACK_SIZE} more for ${PRICES.chatPack} $CHOG, or come back tomorrow.`,
+              action: { label: `Buy ${CHAT_PACK_SIZE}`, onClick: () => buyChats() },
+              duration: 12_000,
+            });
+          }
+        }
         throw new Error(j?.error ?? "Something went wrong");
       }
-      const remaining = Number(res.headers.get("x-chat-remaining"));
+      const bought = Number(res.headers.get("x-chat-credits"));
+      const remaining = Number(res.headers.get("x-chat-remaining")) + (bought > 0 ? bought : 0);
       const limit = Number(res.headers.get("x-chat-limit"));
       if (Number.isFinite(remaining) && limit) setLeft({ remaining, limit });
       const reader = res.body.getReader();

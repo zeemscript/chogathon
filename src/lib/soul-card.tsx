@@ -123,15 +123,6 @@ export async function getCardData(tokenId: number): Promise<CardData> {
 
 const mono = { fontFamily: "Mono", fontSize: 15, letterSpacing: 2.5, textTransform: "uppercase" as const };
 
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      <div style={{ fontFamily: "Koulen", fontSize: 46, lineHeight: 1, color: "#f4f1fe" }}>{value}</div>
-      <div style={{ ...mono, fontSize: 12, color: "rgba(244,241,254,.55)", marginTop: 6 }}>{label}</div>
-    </div>
-  );
-}
-
 function Mini({ src, label, sub, color }: { src?: string; label: string; sub: string; color: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

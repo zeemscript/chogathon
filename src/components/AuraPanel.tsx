@@ -3,15 +3,14 @@
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { parseUnits } from "viem";
 import { toast } from "sonner";
-import { useWriteContract } from "wagmi";
 import { Button } from "@/components/ui/button";
+import { friendly, OWNER_SHARE, TREASURY, useChogPay } from "@/hooks/useChogPay";
 import { useOwnerAuth } from "@/hooks/useOwnerAuth";
-import { CHOG_TOKEN } from "@/lib/chain";
 import { Coins01Icon, FireIcon, Sun03Icon } from "@hugeicons/core-free-icons";
 import AuraFlame from "@/components/AuraFlame";
 import Icon from "@/components/Icon";
+import RoastButton from "@/components/RoastButton";
 import { TIER_STYLE } from "@/lib/tiers";
 import { cn } from "@/lib/utils";
 
@@ -30,20 +29,6 @@ type Aura = {
   fading: boolean;
 };
 
-const TREASURY = process.env.NEXT_PUBLIC_CHOG_TREASURY as `0x${string}` | undefined;
-const erc20 = [
-  {
-    type: "function",
-    name: "transfer",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "to", type: "address" },
-      { name: "value", type: "uint256" },
-    ],
-    outputs: [{ type: "bool" }],
-  },
-] as const;
-
 function Bar({ label, value, total, cls, note }: { label: string; value: number; total: number; cls: string; note?: string }) {
   return (
     <div className="space-y-1.5">
@@ -61,18 +46,10 @@ function Bar({ label, value, total, cls, note }: { label: string; value: number;
   );
 }
 
-// Wallet errors are long and scary; say what happened in one line.
-function friendly(err: unknown, fallback: string) {
-  const msg = err instanceof Error ? err.message : String(err ?? "");
-  if (/reject|denied|cancel/i.test(msg)) return "Cancelled in your wallet. No $CHOG was sent.";
-  if (/insufficient|exceeds balance/i.test(msg)) return "Not enough $CHOG (or MON for gas) in this wallet.";
-  return msg.split("\n")[0] || fallback;
-}
-
 export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?: string }) {
   const qc = useQueryClient();
   const { address, isOwner, auth, signIn, signing } = useOwnerAuth(owner);
-  const { writeContractAsync } = useWriteContract();
+  const pay = useChogPay();
   const [busy, setBusy] = useState<string>();
   const { openConnectModal } = useConnectModal();
 
@@ -136,28 +113,34 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
     }
   }
 
+  // Fans: 80% to the Chog's owner, 20% to the treasury (two quick confirms).
+  // Owners feeding their own Chog: 100% to the treasury.
   async function feed(amount: number) {
     if (!TREASURY) return;
     if (!address) return needWallet(`Feeding sends ${amount} $CHOG and grows its Aura.`);
     setBusy(`feed${amount}`);
-    const t = toast.loading(`Feeding ${amount} $CHOG…`, { description: "Confirm in your wallet" });
+    const self = isOwner || !owner;
+    const toOwner = self ? 0 : Math.round(amount * OWNER_SHARE);
+    const toVault = amount - toOwner;
+    const t = toast.loading(`Feeding ${amount} $CHOG…`, { description: self ? "Confirm in your wallet" : `1/2 · ${toOwner} $CHOG to its owner` });
     try {
       const a = auth ?? (await signIn()); // proves the feed is ours to claim
-      const txHash = await writeContractAsync({
-        address: CHOG_TOKEN,
-        abi: erc20,
-        functionName: "transfer",
-        args: [TREASURY, parseUnits(String(amount), 18)],
-      });
+      const txHashes: string[] = [];
+      if (toOwner) txHashes.push(await pay(owner as `0x${string}`, toOwner));
+      if (toOwner) toast.loading(`Feeding ${amount} $CHOG…`, { id: t, description: `2/2 · ${toVault} $CHOG platform fee` });
+      txHashes.push(await pay(TREASURY, toVault));
       toast.loading(`Feeding ${amount} $CHOG…`, { id: t, description: "Waiting for Monad" });
       const res = await fetch("/api/feed", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tokenId, txHash, auth: a }),
+        body: JSON.stringify({ tokenId, txHashes, auth: a }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error);
-      toast.success(`Nom. +${j.points} Aura`, { id: t, description: `${j.amount} $CHOG fed` });
+      toast.success(`Nom. +${j.points} Aura`, {
+        id: t,
+        description: j.toOwner ? `${j.amount} $CHOG fed · ${j.toOwner} went to its owner` : `${j.amount} $CHOG fed`,
+      });
       qc.setQueryData(["aura", tokenId], j.aura);
     } catch (err) {
       toast.error(friendly(err, "Feeding failed"), { id: t, description: undefined });
@@ -165,6 +148,7 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
       setBusy(undefined);
     }
   }
+
 
   const style = TIER_STYLE[aura?.tier ?? "Dormant"] ?? TIER_STYLE.Dormant;
   const total = aura ? Math.max(1, aura.social + aura.care + aura.chog) : 1;
@@ -230,6 +214,7 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
               <Icon icon={FireIcon} size={14} />
               {busy === "hype" || signing ? "…" : "Hype"}
             </Button>
+            <RoastButton targetId={tokenId} targetName={`#${tokenId}`} />
           </>
         )}
         {TREASURY ? (

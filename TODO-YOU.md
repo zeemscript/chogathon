@@ -14,6 +14,10 @@ Last updated: 2026-10-10
 - [ ] **Test $CHOG feeding once** (treasury is set ✓). You need a little $CHOG + MON for gas.
       Open any Chog page and press Feed 100. No feeds recorded yet.
 
+- [ ] **Run migration `0004_chog_economy.sql`** in the Supabase SQL Editor
+      (https://supabase.com/dashboard/project/kvmhlxrtfpqhzjozctnm/sql/new → paste → Run).
+      Needed for the 80/20 feed split, paid chat packs and commissioned roasts.
+
 ## Testing
 
 - [ ] **A Chog to test as an owner** (or a borrowed wallet holding one)
@@ -27,8 +31,6 @@ Last updated: 2026-10-10
 
 - [ ] **Who is the Chog Genesis artist?** toad said to credit them if it's an independent artist.
       Send me the name/handle and I'll add it to the footer, README and demo video.
-- [ ] **What got "extended"** (build deadline or registration)? Affects how much we can build.
-- [ ] **Can the submission be edited after submitting?** (Chog World shows "UPDATE 29".)
 
 ## Optional
 
@@ -46,4 +48,5 @@ Last updated: 2026-10-10
 - [x] WalletConnect (Reown) project ID added locally and on Vercel
 - [x] `OPENSEA_API_KEY` and `CRON_SECRET` added on Vercel
 - [x] Deployed to production: https://chog-souls.vercel.app (daily Square cron active)
+- [x] Answered by the Chogathon page: registration was extended (to Oct 11); submissions can be edited until the hackathon ends
 - [x] Cleared to use Chog Genesis art in the app and demo (toad, Chog Discord, 2026-10-10)

@@ -16,6 +16,9 @@ export type TownPost = {
   kind: "post" | "gossip" | "event" | "reaction" | "roast";
   content: string;
   created_at: string;
+  commissioned_by?: string | null;
+  reply_to?: number | null;
+  comeback_used?: boolean;
 };
 
 export type Relation = {
@@ -261,9 +264,14 @@ function generateFallback(author: Chog, target: Chog, rel: Relation | undefined,
 }
 
 // One tick of the Square: one Chog posts, and feelings shift both ways.
-export async function townTick(): Promise<TownPost[]> {
-  const authorId = await pickAuthor();
-  const targetId = await pickTarget(authorId);
+// Write one post by `authorId` about `targetId` and apply its effects (Aura,
+// feelings). Used by the timer, commissioned roasts and comebacks.
+export async function createPost(
+  authorId: number,
+  targetId: number,
+  mode: Kind,
+  extra: { commissioned_by?: string; reply_to?: number } = {},
+): Promise<TownPost> {
   const author = getChog(authorId)!;
   const target = getChog(targetId)!;
   await ensureChogs([authorId, targetId]);
@@ -271,38 +279,44 @@ export async function townTick(): Promise<TownPost[]> {
   const [rels, recent] = await Promise.all([getRelations(authorId), listPosts({ limit: 3 })]);
   const rel = rels.find((r) => r.other_token_id === targetId);
 
-  // About a third of posts are roasts; the rest gossip, plus a few solo thoughts.
-  const r = Math.random();
-  const mode: Kind = r < 0.35 ? "roast" : r < 0.9 ? "gossip" : "post";
   let gen: Generated;
   try {
     gen = await generateWithAI(author, target, rel, recent, mode);
   } catch {
     gen = generateFallback(author, target, rel, mode);
   }
+  // Paid roasts and comebacks are always roasts about the target.
+  if (extra.commissioned_by || extra.reply_to) gen = { ...gen, kind: "roast" };
 
   const solo = gen.kind === "post" && !gen.content.includes(`#${targetId}`);
   const db = supabaseAdmin();
-  const row = { token_id: authorId, about_token_id: solo ? null : targetId, kind: gen.kind, content: gen.content };
+  const row = { token_id: authorId, about_token_id: solo ? null : targetId, kind: gen.kind, content: gen.content, ...extra };
   let { data: post, error } = await db.from("town_posts").insert(row).select().single();
   if (error?.code === "23514" && gen.kind === "roast") {
     // Database not migrated for roasts yet (0003): store it as gossip.
     ({ data: post, error } = await db.from("town_posts").insert({ ...row, kind: "gossip" }).select().single());
   }
-  if (error) throw new Error(`townTick: ${error.message}`);
+  if (error) throw new Error(`createPost: ${error.message}`);
 
-  const created = [post as TownPost];
   await award(authorId, "square_post", 1, { dedupeKey: `post:${(post as TownPost).id}` });
   if (!solo) {
     // Being talked about is fame, good or bad.
     await award(targetId, "square_mention", 3, { actor: String(authorId), dedupeKey: `mention:${(post as TownPost).id}` });
-  }
-  if (!solo) {
     await nudgeRelation(authorId, targetId, gen.affinity_delta, gen.grudge);
     // Being talked about stings (or flatters) the target too.
     await nudgeRelation(targetId, authorId, Math.round(gen.affinity_delta * 0.6));
   }
-  return created;
+  return post as TownPost;
+}
+
+// One tick of the Square: a random Chog posts about another.
+export async function townTick(): Promise<TownPost[]> {
+  const authorId = await pickAuthor();
+  const targetId = await pickTarget(authorId);
+  // About a third of posts are roasts; the rest gossip, plus a few solo thoughts.
+  const r = Math.random();
+  const mode: Kind = r < 0.35 ? "roast" : r < 0.9 ? "gossip" : "post";
+  return [await createPost(authorId, targetId, mode)];
 }
 
 // Run a tick only if the Square has been quiet for a while.

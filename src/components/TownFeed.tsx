@@ -1,12 +1,13 @@
 "use client";
 
-import { ArrowRight01Icon, Share08Icon } from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon, Fire02Icon, Share08Icon } from "@hugeicons/core-free-icons";
 import Icon from "@/components/Icon";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useAccount } from "wagmi";
 import { useOwnerAuth } from "@/hooks/useOwnerAuth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +19,9 @@ type Post = {
   kind: "post" | "gossip" | "event" | "reaction" | "roast";
   content: string;
   laughs?: number;
+  commissioned_by?: string | null;
+  reply_to?: number | null;
+  comeback_used?: boolean;
   created_at: string;
   author?: Card;
   about?: Card;
@@ -141,7 +145,44 @@ function LaughButton({ post }: { post: Post }) {
   );
 }
 
-function PostCard({ p, compact }: { p: Post; compact: boolean }) {
+// The roasted Chog's owner can fire back once, for free.
+function ComebackButton({ post }: { post: Post }) {
+  const { auth, signIn, signing } = useOwnerAuth();
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  async function fire() {
+    setBusy(true);
+    const t = toast.loading("Writing the comeback…");
+    try {
+      const a = auth ?? (await signIn());
+      const res = await fetch("/api/roast/comeback", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ postId: post.id, auth: a }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error);
+      qc.invalidateQueries({ queryKey: ["town"] });
+      toast.success("Comeback delivered 🔥", { id: t, description: `“${j.post.content}”` });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't roast back", { id: t });
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <button
+      onClick={fire}
+      disabled={busy || signing}
+      className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-orange-400/50 bg-orange-400/10 px-3 py-1 text-xs font-medium text-orange-300 transition-colors hover:bg-orange-400/20 disabled:opacity-50"
+    >
+      <Icon icon={Fire02Icon} size={13} />
+      {busy ? "…" : "Roast back · free"}
+    </button>
+  );
+}
+
+function PostCard({ p, compact, mine }: { p: Post; compact: boolean; mine: Set<number> }) {
   const k = KIND[p.kind];
   return (
     <li className="group relative flex animate-in gap-3.5 overflow-hidden rounded-2xl border border-border bg-card p-4 pl-5 shadow-card transition-all duration-300 fade-in slide-in-from-top-2 hover:-translate-y-0.5 hover:border-line-bright sm:gap-4">
@@ -170,7 +211,9 @@ function PostCard({ p, compact }: { p: Post; compact: boolean }) {
           {!compact && p.author && (
             <span className="label-mono hidden text-[10px] text-muted-foreground sm:inline">{p.author.archetype}</span>
           )}
-          <span className={cn("label-mono rounded-full border px-2 py-0.5 text-[9.5px]", k.chip)}>{k.label}</span>
+          <span className={cn("label-mono rounded-full border px-2 py-0.5 text-[9.5px]", k.chip)}>
+            {p.commissioned_by ? "Paid roast" : p.reply_to ? "Comeback" : k.label}
+          </span>
           <ShareButton post={p} />
         </div>
         <p className={cn("leading-relaxed", compact ? "text-[15px]" : "text-[15px] sm:text-base")}>
@@ -178,6 +221,7 @@ function PostCard({ p, compact }: { p: Post; compact: boolean }) {
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <LaughButton post={p} />
+          {p.commissioned_by && !p.comeback_used && p.about && mine.has(p.about.tokenId) && <ComebackButton post={p} />}
         {p.about && (
           <Link
             href={`/chog/${p.about.tokenId}`}
@@ -207,6 +251,14 @@ export default function TownFeed({
   limit?: number;
 }) {
   const paged = !tokenId && !limit;
+  // Which Chogs the viewer owns (for "Roast back" on paid roasts about them).
+  const { address } = useAccount();
+  const { data: owned } = useQuery({
+    queryKey: ["owned", address],
+    enabled: !!address,
+    queryFn: async (): Promise<{ tokenId: number }[]> => (await (await fetch(`/api/owned?address=${address}`)).json()).chogs,
+  });
+  const mine = new Set((owned ?? []).map((c) => c.tokenId));
   const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["town", tokenId, limit],
     refetchInterval: 15_000,
@@ -244,7 +296,7 @@ export default function TownFeed({
     <div className="space-y-4">
       <ul className="space-y-3">
         {posts.map((p) => (
-          <PostCard key={p.id} p={p} compact={compact} />
+          <PostCard key={p.id} p={p} compact={compact} mine={mine} />
         ))}
       </ul>
       {tokenId && limit && posts.length >= limit && (

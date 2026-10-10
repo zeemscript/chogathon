@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { parseTokenId } from "@/lib/chogs";
 import { getOwner } from "@/lib/owners";
 import { chatQuota } from "@/lib/limits";
+import { addCredits, getCredits } from "@/lib/payments";
 import { isRealWallet, resolveSpeaker, visitorId, type AuthPayload } from "@/lib/speaker";
 import { prepareSoul, remember, systemPrompt, type Speaker } from "@/lib/soul";
 import { getRelations, listPosts, nudgeRelation } from "@/lib/town";
@@ -62,14 +63,18 @@ export async function POST(request: NextRequest) {
   const memoryOwner = speaker.role === "owner" ? speaker.address! : `visitor:${visitorId(request, speaker)}`;
 
   const quota = await chatQuota(memoryOwner, speaker.role);
-  if (!quota.allowed) {
+  // Free chats used up? Spend a chat bought with $CHOG, if this wallet has one.
+  let credits = 0;
+  if (!quota.allowed && quota.reason === "you" && speaker.address) credits = await getCredits(speaker.address);
+  const useCredit = credits > 0;
+  if (!quota.allowed && !useCredit) {
     const error =
       quota.reason === "global"
         ? "The Chogs are worn out from talking today. Come back tomorrow."
         : speaker.role === "owner"
           ? `You've used all ${quota.limit} chats for today. Your Chog needs its beauty sleep.`
           : `You've used all ${quota.limit} visitor chats for today. Own a Chog to talk more.`;
-    return Response.json({ error, remaining: 0, limit: quota.limit }, { status: 429 });
+    return Response.json({ error, remaining: 0, limit: quota.limit, canBuy: quota.reason === "you" }, { status: 429 });
   }
   const [{ chog, memory }, relations, gossip, aura] = await Promise.all([
     prepareSoul(tokenId, owner),
@@ -123,6 +128,7 @@ export async function POST(request: NextRequest) {
         }
         await absorbMentions(tokenId, message, speaker.role === "owner").catch(() => {});
         await earnChatAura(request, tokenId, speaker).catch((err) => console.error("aura", err));
+        if (reply && useCredit) await addCredits(speaker.address!, -1);
         if (reply) {
           await remember(tokenId, [
             { kind: "chat", role: "user", content: message, owner: memoryOwner },
@@ -141,7 +147,8 @@ export async function POST(request: NextRequest) {
     headers: {
       "content-type": "text/plain; charset=utf-8",
       "x-speaker-role": speaker.role,
-      "x-chat-remaining": String(quota.remaining - 1),
+      "x-chat-remaining": String(useCredit ? 0 : quota.remaining - 1),
+      "x-chat-credits": String(useCredit ? credits - 1 : credits),
       "x-chat-limit": String(quota.limit),
     },
   });
