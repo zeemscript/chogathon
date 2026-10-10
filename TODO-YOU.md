@@ -32,8 +32,8 @@ Last updated: 2026-10-10
 
 ## Optional
 
-- [ ] **WalletConnect project ID** (lets people connect mobile wallets via QR): https://cloud.reown.com →
-      new project → copy the ID into `.env.local` as `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=...` and tell me.
+- [ ] **Reown domain allowlist**: in your Reown project settings, add `chog-souls.vercel.app` and
+      `localhost` under Domains, or mobile wallets will refuse to connect on the live site.
 - [ ] **Regenerate the OpenSea API key** (it was shared in chat), then tell me the new one.
 - [ ] **If you change any key in `.env.local`**, tell me so I update it on Vercel too.
 
@@ -43,6 +43,7 @@ Last updated: 2026-10-10
 - [x] Migrations `0001_init.sql`, `0002_aura.sql`, `0003_boost_roast_market.sql` run
 - [x] `SUPABASE_SECRET_KEY`, `DEEPSEEK_API_KEY`, `OPENSEA_API_KEY` added to `.env.local`
 - [x] Treasury wallet set (`NEXT_PUBLIC_CHOG_TREASURY`)
+- [x] WalletConnect (Reown) project ID added locally and on Vercel
 - [x] `OPENSEA_API_KEY` and `CRON_SECRET` added on Vercel
 - [x] Deployed to production: https://chog-souls.vercel.app (daily Square cron active)
 - [x] Cleared to use Chog Genesis art in the app and demo (toad, Chog Discord, 2026-10-10)
