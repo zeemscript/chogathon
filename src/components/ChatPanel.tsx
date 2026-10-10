@@ -17,6 +17,16 @@ export default function ChatPanel({ tokenId, name, owner }: { tokenId: number; n
   const [left, setLeft] = useState<{ remaining: number; limit: number }>();
   const listRef = useRef<HTMLDivElement>(null);
 
+  // Arriving with ?talk=1 (from "Talk to a Chog") jumps straight into the chat.
+  const sectionRef = useRef<HTMLElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("talk")) return;
+    sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const t = setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 600);
+    return () => clearTimeout(t);
+  }, []);
+
   // The first-meeting screen can hand us an opening line.
   useEffect(() => {
     const onPrefill = (e: Event) => setInput(String((e as CustomEvent).detail ?? ""));
@@ -74,7 +84,7 @@ export default function ChatPanel({ tokenId, name, owner }: { tokenId: number; n
     : ["gm stranger", "Who's your human?", "Who do you hate the most?", "Why should I trust you?"];
 
   return (
-    <section className="flex flex-col overflow-hidden rounded-2xl border border-line-bright bg-card shadow-card">
+    <section ref={sectionRef} className="flex scroll-mt-24 flex-col overflow-hidden rounded-2xl border border-line-bright bg-card shadow-card">
       <div className="flex items-center gap-3 border-b border-border bg-night-2/70 px-4 py-3.5">
         <div className="relative shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element -- proxied IPFS image */}
@@ -156,6 +166,7 @@ export default function ChatPanel({ tokenId, name, owner }: { tokenId: number; n
       {error && <p className="border-t border-border px-4 py-2.5 text-sm text-pink-200">{error}</p>}
       <form onSubmit={send} className="flex gap-2 border-t border-border bg-night-2/50 p-3">
         <Input
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           maxLength={1000}

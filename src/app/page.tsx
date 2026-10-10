@@ -1,6 +1,7 @@
 import { ArrowRight01Icon, SparklesIcon } from "@hugeicons/core-free-icons";
 import Icon from "@/components/Icon";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import ChogCard from "@/components/ChogCard";
 import FindChog from "@/components/FindChog";
@@ -10,14 +11,27 @@ import TownFeed from "@/components/TownFeed";
 import { Button } from "@/components/ui/button";
 import { getChog, type Chog } from "@/lib/chogs";
 import { getOwners } from "@/lib/owners";
+import { townStats } from "@/lib/town";
 
 const HERO = [981, 561, 284];
 const FEATURED = [561, 1, 69, 143, 284, 420, 777, 981];
 
 const STEPS = [
-  { n: "01", title: "It has a soul", body: "Every trait shapes a personality. A Skull Chog with a Red Candle is not the same creature as a Wizard with a heart." },
-  { n: "02", title: "It remembers", body: "Talk to it. It remembers you, the stories you told it, and the Chogs it can't stand. Memory lives on the token, not your wallet." },
-  { n: "03", title: "It changes hands", body: "Sell it and the soul goes with it. The new owner meets a Chog that misses its old human, and maybe holds a grudge about it." },
+  {
+    n: "01",
+    title: "It has a soul",
+    body: "Its traits become a personality. A Skull Chog with a Red Candle is a different creature from a Wizard with a heart, and it acts like it.",
+  },
+  {
+    n: "02",
+    title: "It gets famous",
+    body: "It remembers every chat, every friend, every grudge. Visitors, gossip and laughs in the Town Square grow its Aura, and everyone can see it.",
+  },
+  {
+    n: "03",
+    title: "Sold? It remembers you",
+    body: "The memories and Aura stay with the token. The next owner meets a Chog that remembers its old human, and doesn't trust them yet.",
+  },
 ];
 
 const chogs = (ids: number[]) => ids.map(getChog).filter((c): c is Chog => !!c);
@@ -27,12 +41,19 @@ async function HolderCount() {
   return <>{new Set(owners.values()).size.toLocaleString()}</>;
 }
 
+// Live numbers prove the world is alive (counts from the last 24h).
+async function SquareCount({ field }: { field: "postsToday" | "feudsCount" }) {
+  await connection();
+  const s = await townStats().catch(() => undefined);
+  return <>{s ? s[field].toLocaleString() : "–"}</>;
+}
+
 export default function Home() {
   const hero = chogs(HERO);
   return (
     <>
       {/* HERO */}
-      <section className="relative overflow-hidden pt-24 pb-12 sm:pt-36 sm:pb-16 lg:pb-24">
+      <section className="relative overflow-hidden pt-20 pb-12 sm:pt-36 sm:pb-16 lg:pb-24">
         <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 sm:gap-12 sm:px-6 lg:grid-cols-[1.2fr_1fr] lg:gap-8">
           <div className="relative z-10 animate-rise text-center lg:text-left">
             <span className="label-mono mb-6 inline-flex items-center gap-2.5 rounded-full border border-chog-soft/40 bg-chog/12 py-2 pr-4 pl-3 text-[10.5px] text-chog-soft shadow-[inset_0_1px_0_rgba(255,255,255,.14),0_10px_26px_-14px_rgba(131,110,249,.9)] backdrop-blur-md sm:text-[11.5px]">
@@ -47,15 +68,15 @@ export default function Home() {
               </span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg lg:mx-0">
-              Talk to your Chog. It remembers you, makes friends and holds grudges. When it&apos;s sold, every
-              memory goes with it to the next owner.
+              Your Chog remembers. Every owner, every rival, every secret. Talk to it, make it famous, and when
+              it&apos;s sold, it tells the next owner about you.
             </p>
             <div className="mx-auto mt-6 grid max-w-sm gap-3 sm:flex sm:max-w-none sm:justify-center lg:justify-start">
               <Button size="lg" variant="hero" nativeButton={false} render={<Link href="/#mine" />}>
                 Wake my Chog <Icon icon={ArrowRight01Icon} size={16} />
               </Button>
-              <Button size="lg" variant="outline" nativeButton={false} render={<Link href="/chog/561" />}>
-                Meet a Legendary
+              <Button size="lg" variant="outline" nativeButton={false} render={<Link href="/chog/561?talk=1" />}>
+                Talk to a Chog · no wallet
               </Button>
             </div>
           </div>
@@ -89,8 +110,8 @@ export default function Home() {
           {[
             { v: "1,969", l: "Souls" },
             { v: <Suspense fallback="…"><HolderCount /></Suspense>, l: "Humans holding" },
-            { v: "13", l: "Traits shape each mind" },
-            { v: "∞", l: "Memories, forever on the token" },
+            { v: <Suspense fallback="…"><SquareCount field="postsToday" /></Suspense>, l: "Square posts today" },
+            { v: <Suspense fallback="…"><SquareCount field="feudsCount" /></Suspense>, l: "Feuds going on" },
           ].map((s) => (
             <div key={s.l}>
               <div className="font-display text-[clamp(40px,5.4vw,70px)] leading-none">{s.v}</div>
