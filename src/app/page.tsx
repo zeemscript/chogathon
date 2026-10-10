@@ -73,9 +73,7 @@ export default function Home() {
                   ][i]
                 }
               >
-                <div className="animate-float" style={{ animationDelay: `${-i * 2.3}s` }}>
-                  <ChogCard chog={c} href={`/chog/${c.tokenId}`} bare={i !== 1} className="animate-rise" />
-                </div>
+                <ChogCard chog={c} href={`/chog/${c.tokenId}`} bare={i !== 1} className="animate-rise" />
               </div>
             ))}
           </div>

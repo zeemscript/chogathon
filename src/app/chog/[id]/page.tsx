@@ -69,6 +69,11 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
   const soul = buildPersonality(chog.traits);
   const traits = Object.entries(chog.traits).filter(([, v]) => v && v !== "None");
   const tier = chog.traits.Tier ?? "Chog";
+  const notes = [
+    ...soul.quirks.map((q) => ({ text: q, icon: SparklesIcon, cls: "text-chog-soft" })),
+    { text: `loves ${soul.likes.join(" and ")}`, icon: FavouriteIcon, cls: "text-chog-pink" },
+    { text: `can't stand ${soul.dislikes.join(", ")}`, icon: HeartbreakIcon, cls: "text-chog-gold" },
+  ];
 
   return (
     <div className="space-y-4">
@@ -84,17 +89,23 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
         <div className="absolute inset-0 bg-gradient-to-b from-night/40 via-card/85 to-card" />
 
         <div className="relative grid gap-5 p-4 sm:p-6 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-8">
-          {/* portrait (desktop) */}
-          <div className="hidden lg:block">
-            <div className="animate-float">
-              <div className={cn(
-                  "rounded-[22px] bg-gradient-to-br p-[3px]",
-                  RARITY_RING[tier] ?? "from-chog-soft to-chog-deep shadow-[0_0_50px_rgba(131,110,249,.35)]",
-                )}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway image */}
-                <img src={chog.image} alt={chog.name} className="aspect-square w-full rounded-[19px] object-cover" />
-              </div>
+          {/* portrait + soul notes (desktop) */}
+          <div className="hidden space-y-5 lg:block">
+            <div className={cn(
+              "rounded-[22px] bg-gradient-to-br p-[3px]",
+              RARITY_RING[tier] ?? "from-chog-soft to-chog-deep shadow-[0_0_50px_rgba(131,110,249,.35)]",
+            )}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway image */}
+              <img src={chog.image} alt={chog.name} className="aspect-square w-full rounded-[19px] object-cover" />
             </div>
+            <ul className="space-y-2.5 text-sm text-muted-foreground">
+              {notes.map((q) => (
+                <li key={q.text} className="flex gap-2.5">
+                  <Icon icon={q.icon} size={15} className={cn("mt-0.5", q.cls)} />
+                  <span className="min-w-0 leading-snug">{q.text}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* identity + soul + aura */}
@@ -130,13 +141,9 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
                 </span>
               ))}
             </div>
-            <ul className="grid gap-x-6 gap-y-1 text-sm text-muted-foreground sm:grid-cols-2">
-              {[
-                ...soul.quirks.map((q) => ({ text: q, icon: SparklesIcon, cls: "text-chog-soft" })),
-                { text: `loves ${soul.likes.join(" and ")}`, icon: FavouriteIcon, cls: "text-chog-pink" },
-                { text: `can't stand ${soul.dislikes.join(", ")}`, icon: HeartbreakIcon, cls: "text-chog-gold" },
-              ].map((q, i) => (
-                // phones show the first two; the rest from sm up
+            {/* phones/tablets: notes stay here (two on phones) */}
+            <ul className="grid gap-x-6 gap-y-1 text-sm text-muted-foreground sm:grid-cols-2 lg:hidden">
+              {notes.map((q, i) => (
                 <li key={q.text} className={cn("flex gap-2", i >= 2 && "hidden sm:flex")}>
                   <Icon icon={q.icon} size={15} className={cn("mt-0.5", q.cls)} />
                   <span className="min-w-0">{q.text}</span>
