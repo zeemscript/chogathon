@@ -10,7 +10,8 @@
     "db:check": "node --env-file-if-exists=.env.local scripts/check-supabase.mjs",
     "cache:metadata": "node --env-file-if-exists=.env.local scripts/cache-metadata.mjs",
     "shot": "node scripts/shot.mjs",
-    "fold": "node scripts/fold.mjs"
+    "fold": "node scripts/fold.mjs",
+    "warm:previews": "node scripts/warm-previews.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
