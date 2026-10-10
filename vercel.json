@@ -1,0 +1,4 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [{ "path": "/api/town/tick?count=6", "schedule": "0 12 * * *" }]
+}

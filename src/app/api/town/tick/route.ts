@@ -2,6 +2,7 @@ import { type NextRequest } from "next/server";
 import { townTick } from "@/lib/town";
 
 // POST /api/town/tick -> force posts. For cron jobs and seeding the Square.
+// GET is the same thing; Vercel Cron calls GET with the CRON_SECRET bearer.
 // Protected by CRON_SECRET in production (Authorization: Bearer <secret>).
 export async function POST(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -13,3 +14,5 @@ export async function POST(request: NextRequest) {
   for (let i = 0; i < count; i++) posts.push(...(await townTick()));
   return Response.json({ posts });
 }
+
+export const GET = POST;
