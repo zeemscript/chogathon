@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useOwnerAuth } from "@/hooks/useOwnerAuth";
 import { CHOG_TOKEN } from "@/lib/chain";
 import { Coins01Icon, FireIcon, Sun03Icon } from "@hugeicons/core-free-icons";
+import AuraFlame from "@/components/AuraFlame";
 import Icon from "@/components/Icon";
 import { TIER_STYLE } from "@/lib/tiers";
 import { cn } from "@/lib/utils";
@@ -171,19 +172,8 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
   return (
     <section className="rounded-2xl border border-line-bright bg-night/55 backdrop-blur-md">
       <div className="flex items-center gap-4 p-4 sm:gap-5 sm:p-5">
-        {/* Aura orb */}
-        <div className="relative grid size-16 shrink-0 place-items-center sm:size-[88px]">
-          <div
-            className={cn("absolute inset-0 animate-[spin_9s_linear_infinite] rounded-full bg-gradient-to-br p-[3px]", style.ring)}
-            style={{ boxShadow: `0 0 34px ${style.glow}` }}
-          >
-            <div className="size-full rounded-full bg-card" />
-          </div>
-          <div className="relative text-center">
-            <div className="font-display text-3xl leading-none sm:text-4xl">{aura?.score ?? "…"}</div>
-            <div className="label-mono text-[9px] text-muted-foreground">Aura</div>
-          </div>
-        </div>
+        {/* Aura: the Soul flame, with the score where its face would be */}
+        <AuraFlame score={aura?.score} glow={style.glow} className="size-[72px] sm:size-24" numberClass="text-[26px] sm:text-[36px]" />
 
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4">

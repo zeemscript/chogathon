@@ -6,7 +6,7 @@ import sharp from "sharp";
 import { auraLeaderboard, getAura, type Aura } from "./aura";
 import { getChogRaw } from "./chogs";
 import { fetchArt } from "./art";
-import { SOUL_FLAME_DATA_URL } from "./logo-svg";
+import { AURA_FLAME_DATA_URL, SOUL_FLAME_DATA_URL } from "./logo-svg";
 import { buildPersonality } from "./personality";
 import { supabaseAdmin } from "./supabase/server";
 import { getRelations, listPosts } from "./town";
@@ -243,9 +243,14 @@ export async function renderSoulCard(tokenId: number): Promise<ImageResponse> {
 
           {/* AURA: the hero stat */}
           <div style={{ ...glass, display: "flex", alignItems: "center", gap: 28, marginTop: 22, padding: "18px 26px", borderRadius: 24, boxShadow: `inset 0 0 40px ${t.b}33` }}>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ fontFamily: "Koulen", fontSize: 92, lineHeight: 0.85, color: "#fff", textShadow: `0 0 30px ${t.b}` }}>{String(d.aura.score)}</div>
-              <div style={{ ...mono, fontSize: 12, color: "rgba(255,255,255,.6)", marginTop: 4 }}>Aura</div>
+            {/* the Soul flame, with the Aura score where its face would be */}
+            <div style={{ display: "flex", position: "relative", width: 112, height: 114, alignItems: "center", justifyContent: "center" }}>
+              <div style={{ position: "absolute", top: 18, left: -14, width: 140, height: 120, borderRadius: 999, background: `radial-gradient(circle, ${t.b}aa 0%, transparent 65%)` }} />
+              {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori */}
+              <img src={AURA_FLAME_DATA_URL} width={112} height={114} style={{ position: "absolute", top: 0, left: 0 }} alt="" />
+              <div style={{ position: "absolute", top: 54, left: 0, width: 112, display: "flex", justifyContent: "center", fontFamily: "Koulen", fontSize: String(d.aura.score).length > 2 ? 34 : 44, lineHeight: 1, color: "#140a24" }}>
+                {String(d.aura.score)}
+              </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
               <div style={{ fontFamily: "Koulen", fontSize: 44, lineHeight: 1, color: t.a }}>{d.aura.tier}</div>
