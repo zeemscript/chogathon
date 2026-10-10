@@ -25,8 +25,8 @@ for (const width of widths) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-  await page.goto(base + path, { waitUntil: "networkidle", timeout: 60_000 }).catch((e) => errors.push(e.message));
-  await page.waitForTimeout(1200);
+  await page.goto(base + path, { waitUntil: "load", timeout: 60_000 }).catch((e) => errors.push(e.message));
+  await page.waitForTimeout(3000); // WalletConnect keeps a socket open, so "networkidle" never fires
   const overflow = await page.evaluate(() => {
     const vw = document.documentElement.clientWidth;
     const wide = [...document.querySelectorAll("body *")]

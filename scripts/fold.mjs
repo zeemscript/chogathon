@@ -11,8 +11,8 @@ const b = await chromium.launch({ channel: "chrome" });
 for (const { path, sel } of checks) {
   for (const [w, h] of sizes) {
     const p = await (await b.newContext({ viewport: { width: w, height: h }, isMobile: w < 640 })).newPage();
-    await p.goto(base + path, { waitUntil: "networkidle" });
-    await p.waitForTimeout(800);
+    await p.goto(base + path, { waitUntil: "load" });
+    await p.waitForTimeout(2500);
     const bottom = await p.locator(sel).first().evaluate((el) => Math.round(el.getBoundingClientRect().bottom));
     console.log(`${path.padEnd(8)} ${w}x${h}  card bottom ${bottom}px  ${bottom <= h ? "FITS" : `overflows by ${bottom - h}px`}`);
     await p.close();
