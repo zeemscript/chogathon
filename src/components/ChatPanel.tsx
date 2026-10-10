@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { authMessage } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
 type Auth = { address: string; issuedAt: string; signature: `0x${string}` };
 type Line = { from: "you" | "chog"; text: string };
@@ -25,12 +28,16 @@ export default function ChatPanel({ tokenId, name, owner }: { tokenId: number; n
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const isOwner = !!address && address.toLowerCase() === owner;
   // Fresh signature from this session, else one saved earlier for this wallet.
   const auth = signed?.address === address ? signed : loadAuth(address);
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), [lines]);
+  // Scroll only the message list (scrollIntoView would move the whole page).
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [lines]);
 
   async function signIn() {
     if (!address) return;
@@ -75,56 +82,64 @@ export default function ChatPanel({ tokenId, name, owner }: { tokenId: number; n
   }
 
   return (
-    <section className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-semibold">Talk to {name}</h2>
+    <section className="overflow-hidden rounded-2xl border border-line-bright bg-card shadow-card">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-night-2/70 px-5 py-4">
+        <div>
+          <p className="label-mono text-chog-soft">✦ Talk</p>
+          <h2 className="font-display text-2xl">Say gm to {name}</h2>
+        </div>
         {isOwner && !auth ? (
-          <button
-            onClick={signIn}
-            disabled={signing}
-            className="rounded-full bg-emerald-500 px-3 py-1 text-sm font-medium text-black hover:bg-emerald-400 disabled:opacity-50"
-          >
+          <Button size="sm" variant="ok" onClick={signIn} disabled={signing}>
             {signing ? "Check your wallet…" : "Sign in as its human"}
-          </button>
+          </Button>
         ) : (
-          <span className="text-xs text-zinc-400">
-            {isOwner ? "You're its human" : "You're a visitor. It may not trust you."}
+          <span
+            className={cn(
+              "label-mono rounded-full border px-3 py-1 text-[10.5px]",
+              isOwner ? "border-chog-ok/40 bg-chog-ok/10 text-chog-ok" : "border-border text-muted-foreground",
+            )}
+          >
+            {isOwner ? "You're its human" : "Visitor · it may not trust you"}
           </span>
         )}
       </div>
 
-      <div className="max-h-96 min-h-32 space-y-2 overflow-y-auto">
-        {lines.length === 0 && <p className="text-sm text-zinc-500">Say something. It remembers.</p>}
+      <div ref={listRef} className="h-[360px] space-y-3 overflow-y-auto px-5 py-5">
+        {lines.length === 0 && (
+          <div className="grid h-full place-items-center text-center">
+            <div>
+              <p className="font-display text-3xl text-white/20">It&apos;s listening</p>
+              <p className="mt-1 text-sm text-muted-foreground">Say something. It remembers.</p>
+            </div>
+          </div>
+        )}
         {lines.map((l, i) => (
           <p
             key={i}
-            className={
+            className={cn(
+              "w-fit max-w-[85%] animate-in rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed duration-300 fade-in slide-in-from-bottom-2",
               l.from === "you"
-                ? "ml-auto w-fit max-w-[85%] rounded-2xl bg-violet-500 px-3 py-2 text-sm"
-                : "w-fit max-w-[85%] rounded-2xl bg-white/10 px-3 py-2 text-sm"
-            }
+                ? "ml-auto rounded-br-md bg-chog text-white shadow-hard"
+                : "rounded-bl-md border border-border bg-night-3",
+            )}
           >
-            {l.text || "…"}
+            {l.text || <span className="inline-flex gap-1 py-1">{[0, 1, 2].map((d) => <span key={d} className="size-1.5 animate-pulse-dot rounded-full bg-chog-soft" style={{ animationDelay: `${d * 0.2}s` }} />)}</span>}
           </p>
         ))}
-        <div ref={endRef} />
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      <form onSubmit={send} className="flex gap-2">
-        <input
+      {error && <p className="px-5 pb-2 text-sm text-destructive">{error}</p>}
+      <form onSubmit={send} className="flex gap-2 border-t border-border bg-night-2/50 p-3">
+        <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           maxLength={1000}
-          placeholder={`Message ${name}`}
-          className="flex-1 rounded-full border border-white/15 bg-black/30 px-4 py-2 text-sm outline-none focus:border-violet-400"
+          placeholder={`Message ${name}…`}
+          className="h-11 flex-1 rounded-[10px] bg-white/[.04]"
         />
-        <button
-          disabled={busy || !input.trim()}
-          className="rounded-full bg-violet-500 px-4 py-2 text-sm font-medium hover:bg-violet-400 disabled:opacity-50"
-        >
+        <Button type="submit" disabled={busy || !input.trim()}>
           Send
-        </button>
+        </Button>
       </form>
     </section>
   );

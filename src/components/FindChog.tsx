@@ -2,27 +2,33 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-// Spectator / dev entry point: open any Chog by token ID.
+// Spectator entry point: open any Chog by token ID.
 export default function FindChog() {
   const router = useRouter();
   const [id, setId] = useState("");
+  const valid = Number(id) >= 1 && Number(id) <= 1969;
   return (
     <form
       className="flex gap-2"
       onSubmit={(e) => {
         e.preventDefault();
-        if (id) router.push(`/chog/${id}`);
+        if (valid) router.push(`/chog/${id}`);
       }}
     >
-      <input
+      <Input
         value={id}
-        onChange={(e) => setId(e.target.value.replace(/\D/g, ""))}
+        onChange={(e) => setId(e.target.value.replace(/\D/g, "").slice(0, 4))}
         inputMode="numeric"
-        placeholder="Token ID (1–1969)"
-        className="w-44 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm outline-none focus:border-violet-400"
+        placeholder="Token # 1–1969"
+        aria-label="Token ID"
+        className="h-11 w-40 rounded-[10px] bg-white/[.04] font-mono"
       />
-      <button className="rounded-full bg-violet-500 px-4 py-2 text-sm font-medium hover:bg-violet-400">Meet</button>
+      <Button type="submit" disabled={!valid}>
+        Meet
+      </Button>
     </form>
   );
 }

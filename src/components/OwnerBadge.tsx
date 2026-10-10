@@ -6,21 +6,27 @@ const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 export default function OwnerBadge({ owner }: { owner?: string }) {
   const { address } = useAccount();
-  if (!owner) return <p className="text-sm text-zinc-500">Owner unknown</p>;
-  const mine = address?.toLowerCase() === owner;
+  if (!owner) return <span className="label-mono text-muted-foreground">Owner unknown</span>;
+  if (address?.toLowerCase() === owner) {
+    return (
+      <span className="label-mono inline-flex items-center gap-2 rounded-full border border-chog-ok/40 bg-chog-ok/10 px-3 py-1 text-chog-ok">
+        <span className="size-1.5 animate-pulse-dot rounded-full bg-chog-ok" />
+        Your Chog
+      </span>
+    );
+  }
   return (
-    <p className="text-sm text-zinc-400">
-      {mine ? (
-        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-300">Your Chog</span>
-      ) : (
-        <>
-          Held by{" "}
-          <a href={`https://monadscan.com/address/${owner}`} target="_blank" rel="noreferrer" className="font-mono hover:text-zinc-200">
-            {short(owner)}
-          </a>
-          <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-xs">Spectating</span>
-        </>
-      )}
-    </p>
+    <span className="label-mono inline-flex items-center gap-2 text-muted-foreground">
+      Held by
+      <a
+        href={`https://monadscan.com/address/${owner}`}
+        target="_blank"
+        rel="noreferrer"
+        className="text-foreground underline-offset-4 hover:text-chog-soft hover:underline"
+      >
+        {short(owner)}
+      </a>
+      <span className="rounded-full border border-border px-2 py-0.5 text-[10px]">Spectating</span>
+    </span>
   );
 }

@@ -98,8 +98,14 @@ export function buildPersonality(traits: Traits): Personality {
   if (traits.Tier === "Epic" || traits.Tier === "Rare") quirks.push(`never lets anyone forget it's ${traits.Tier}`);
   if (traits.Tier === "Common") quirks.push("has a chip on its shoulder about being Common");
 
+  // The ten 1:1 Legendaries have no regular traits; they get a royal soul.
+  if (traits.Base === "1:1") {
+    temperament.add("regal");
+    quirks.unshift("one of only ten 1:1 Chogs in existence, and never lets anyone forget it");
+  }
+
   return {
-    archetype: pick(ARCHETYPES, s, 3),
+    archetype: traits.Base === "1:1" ? "the Legend" : pick(ARCHETYPES, s, 3),
     temperament: [...temperament].slice(0, 3),
     quirks: quirks.slice(0, 3),
     voice: pick(VOICES, s, 4),

@@ -1,26 +1,55 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import type { Chog } from "@/lib/chogs";
+import { buildPersonality } from "@/lib/personality";
 
-// Traits that say most about a Chog's look; the rest appear on the detail page.
-const HEADLINE = ["Tier", "Form", "Head", "Eyes", "Mouth", "Accessory"];
+const TIER_STYLE: Record<string, string> = {
+  Legendary: "bg-chog-gold/20 text-chog-gold border-chog-gold/40",
+  Epic: "bg-chog-pink/15 text-pink-300 border-chog-pink/40",
+  Rare: "bg-chog-cyan/15 text-cyan-300 border-chog-cyan/40",
+};
 
-export default function ChogCard({ chog, href }: { chog: Chog; href?: string }) {
-  const tags = HEADLINE.filter((t) => chog.traits[t] && chog.traits[t] !== "None").map((t) => chog.traits[t]);
+export default function ChogCard({ chog, href, className }: { chog: Chog; href?: string; className?: string }) {
+  const soul = buildPersonality(chog.traits);
+  const tier = chog.traits.Tier;
   const card = (
-    <article className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition hover:border-violet-400/60 hover:bg-white/10">
-      {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway image, skip the optimizer */}
-      <img src={chog.image} alt={chog.name} loading="lazy" className="aspect-square w-full bg-black/40 object-cover" />
-      <div className="space-y-2 p-3">
-        <h3 className="font-semibold">{chog.name}</h3>
-        <ul className="flex flex-wrap gap-1">
-          {tags.slice(0, 4).map((t) => (
-            <li key={t} className="rounded-full bg-violet-500/15 px-2 py-0.5 text-xs text-violet-200">
-              {t}
-            </li>
-          ))}
-        </ul>
+    <article
+      className={cn(
+        "group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-chog-soft/70 hover:shadow-[0_30px_60px_-24px_rgba(0,0,0,.9),0_16px_40px_-18px_rgba(131,110,249,.7)]",
+        className,
+      )}
+    >
+      <div className="relative aspect-square overflow-hidden bg-night-3">
+        {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway image, skip the optimizer */}
+        <img
+          src={chog.image}
+          alt={chog.name}
+          loading="lazy"
+          className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+        />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-card via-card/40 to-transparent" />
+        {tier && tier !== "Common" && (
+          <span
+            className={cn(
+              "label-mono absolute top-3 left-3 rounded-full border px-2.5 py-1 text-[10px] backdrop-blur-md",
+              TIER_STYLE[tier] ?? "border-line-bright bg-night/60 text-chog-soft",
+            )}
+          >
+            {tier}
+          </span>
+        )}
+      </div>
+      <div className="relative -mt-8 space-y-1 px-4 pb-4">
+        <h3 className="font-display text-2xl">{chog.name}</h3>
+        <p className="label-mono truncate text-[10.5px] text-chog-soft">{soul.archetype}</p>
       </div>
     </article>
   );
-  return href ? <Link href={href}>{card}</Link> : card;
+  return href ? (
+    <Link href={href} className="block rounded-2xl outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
+      {card}
+    </Link>
+  ) : (
+    card
+  );
 }

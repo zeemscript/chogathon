@@ -1,18 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Koulen } from "next/font/google";
+import { cn } from "@/lib/utils";
 import Header from "@/components/Header";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import Providers from "./providers";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" });
+const koulen = Koulen({ subsets: ["latin"], weight: "400", variable: "--font-koulen" });
 
 export const metadata: Metadata = {
   title: "Chog Souls",
@@ -21,14 +17,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
+    <html lang="en" className={cn("dark h-full antialiased", inter.variable, mono.variable, koulen.variable)}>
+      <body className="relative flex min-h-full flex-col overflow-x-hidden">
+        {/* Ambient glow orbs + film grain, like chogathon.chog.xyz */}
+        <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+          <div className="orb -top-32 -right-20 size-[550px] bg-[radial-gradient(circle,#836ef9_0%,transparent_70%)]" />
+          <div className="orb bottom-1/4 -left-32 size-[480px] bg-[radial-gradient(circle,#ec4899_0%,transparent_70%)] [animation-delay:-8s] [animation-duration:30s]" />
+          <div className="orb top-[55%] right-[12%] size-[400px] bg-[radial-gradient(circle,#22d3ee_0%,transparent_70%)] [animation-delay:-14s] [animation-duration:36s]" />
+        </div>
+        <div aria-hidden className="grain" />
         <Providers>
-          <Header />
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+          <TooltipProvider>
+            <Header />
+            <main className="w-full min-w-0 flex-1">{children}</main>
+          </TooltipProvider>
         </Providers>
       </body>
     </html>

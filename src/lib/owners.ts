@@ -1,4 +1,5 @@
 import "server-only";
+import { connection } from "next/server";
 import { createPublicClient, getAddress, http } from "viem";
 import { CHOG_NFT, CHOG_SUPPLY, MONAD_RPC, chogNftAbi, monad } from "./chain";
 
@@ -29,6 +30,7 @@ async function loadOwners(): Promise<Map<number, string>> {
 }
 
 export async function getOwners(): Promise<Map<number, string>> {
+  await connection(); // ownership is live data: always render at request time
   if (snapshot && Date.now() - snapshot.at < TTL_MS) return snapshot.owners;
   inflight ??= loadOwners()
     .then((owners) => {
