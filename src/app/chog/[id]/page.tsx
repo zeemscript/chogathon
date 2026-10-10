@@ -67,7 +67,7 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
 
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-10 lg:grid-cols-[400px_minmax(0,1fr)]">
         {/* Left: portrait + soul */}
-        <aside className="space-y-6 lg:sticky lg:top-24">
+        <aside className="space-y-6 lg:sticky lg:top-24 lg:pt-6">
           <div className="mx-auto max-w-[320px] animate-float lg:max-w-none">
             <div className="animate-rise overflow-hidden rounded-2xl border border-line-bright bg-night-3 shadow-[0_52px_90px_-34px_rgba(0,0,0,.95),0_20px_46px_-16px_rgba(131,110,249,.6),inset_0_1px_0_rgba(255,255,255,.22)]">
               {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway image */}
