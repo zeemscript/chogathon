@@ -1,6 +1,6 @@
 import { award } from "@/lib/aura";
 import { getOwner } from "@/lib/owners";
-import { resolveSpeaker, type AuthPayload } from "@/lib/speaker";
+import { isRealWallet, resolveSpeaker, type AuthPayload } from "@/lib/speaker";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 // POST /api/town/laugh { postId, auth } -> laugh at a Square post. Funny Chogs
@@ -17,6 +17,9 @@ export async function POST(request: Request) {
   const who = await resolveSpeaker(body?.auth, await getOwner(post.token_id));
   if (!who.address) return Response.json({ error: "Sign in with your wallet to laugh" }, { status: 401 });
   if (who.role === "owner") return Response.json({ error: "Laughing at your own Chog's jokes? Bold." }, { status: 403 });
+  if (!(await isRealWallet(who.address))) {
+    return Response.json({ error: "This wallet is too new to laugh. Hold a Chog or use a wallet with some Monad history." }, { status: 403 });
+  }
 
   const { error } = await db.from("post_reactions").insert({ post_id: postId, actor: who.address });
   if (error?.code === "23505") return Response.json({ error: "Already laughed", already: true }, { status: 409 });

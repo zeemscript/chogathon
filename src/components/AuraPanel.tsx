@@ -141,6 +141,7 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
     setBusy(`feed${amount}`);
     const t = toast.loading(`Feeding ${amount} $CHOG…`, { description: "Confirm in your wallet" });
     try {
+      const a = auth ?? (await signIn()); // proves the feed is ours to claim
       const txHash = await writeContractAsync({
         address: CHOG_TOKEN,
         abi: erc20,
@@ -151,7 +152,7 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
       const res = await fetch("/api/feed", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tokenId, txHash }),
+        body: JSON.stringify({ tokenId, txHash, auth: a }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error);

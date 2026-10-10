@@ -6,7 +6,7 @@ import { townTick } from "@/lib/town";
 // Protected by CRON_SECRET in production (Authorization: Bearer <secret>).
 export async function POST(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (process.env.NODE_ENV === "production" && request.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (process.env.NODE_ENV === "production" && (!secret || request.headers.get("authorization") !== `Bearer ${secret}`)) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
   const count = Math.min(10, Math.max(1, Number(request.nextUrl.searchParams.get("count")) || 1));

@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { parseTokenId } from "@/lib/chogs";
 import { getOwner } from "@/lib/owners";
 import { chatQuota } from "@/lib/limits";
-import { resolveSpeaker, visitorId, type AuthPayload } from "@/lib/speaker";
+import { isRealWallet, resolveSpeaker, visitorId, type AuthPayload } from "@/lib/speaker";
 import { prepareSoul, remember, systemPrompt, type Speaker } from "@/lib/soul";
 import { getRelations, listPosts, nudgeRelation } from "@/lib/town";
 
@@ -43,8 +43,9 @@ async function earnChatAura(request: Request, tokenId: number, speaker: Speaker)
   if (speaker.role === "owner") {
     await award(tokenId, "owner_chat", 1, { actor: speaker.address });
     await addLoyalty(tokenId, 2);
-  } else {
-    const who = visitorId(request, speaker);
+  } else if (speaker.address && (await isRealWallet(speaker.address))) {
+    // Fame only from real wallets; anonymous or throwaway visitors don't count.
+    const who = speaker.address;
     await award(tokenId, "visitor_chat", 2, { actor: who, dedupeKey: `visit:${tokenId}:${who}:${auraDay()}` });
   }
 }

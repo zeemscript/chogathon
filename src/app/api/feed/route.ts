@@ -3,6 +3,7 @@ import { addLoyalty, award, chogCurve, getAura } from "@/lib/aura";
 import { CHOG_TOKEN } from "@/lib/chain";
 import { parseTokenId } from "@/lib/chogs";
 import { publicClient } from "@/lib/owners";
+import { resolveSpeaker, type AuthPayload } from "@/lib/speaker";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 const erc20 = parseAbi(["event Transfer(address indexed from, address indexed to, uint256 value)"]);
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
   const treasury = process.env.NEXT_PUBLIC_CHOG_TREASURY?.toLowerCase();
   if (!treasury) return Response.json({ error: "Feeding isn't open yet" }, { status: 503 });
 
-  const body = (await request.json().catch(() => null)) as { tokenId?: number; txHash?: string } | null;
+  const body = (await request.json().catch(() => null)) as { tokenId?: number; txHash?: string; auth?: AuthPayload } | null;
   const tokenId = parseTokenId(String(body?.tokenId));
   const txHash = body?.txHash;
   if (!tokenId || !txHash || !isHash(txHash)) {
@@ -37,6 +38,9 @@ export async function POST(request: Request) {
     } catch {}
   }
   if (amount <= 0) return Response.json({ error: "No $CHOG sent to the treasury in that transaction" }, { status: 400 });
+  // Only the wallet that sent the $CHOG can say which Chog it was for.
+  const who = await resolveSpeaker(body?.auth, undefined);
+  if (who.address !== from) return Response.json({ error: "Sign in with the wallet that sent this $CHOG" }, { status: 403 });
 
   const db = supabaseAdmin();
   const { data: prev } = await db.from("chog_feeds").select("amount").eq("token_id", tokenId);

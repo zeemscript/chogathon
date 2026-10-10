@@ -1,7 +1,7 @@
 import { auraDay, award, getAura } from "@/lib/aura";
 import { parseTokenId } from "@/lib/chogs";
 import { getOwner } from "@/lib/owners";
-import { resolveSpeaker, type AuthPayload } from "@/lib/speaker";
+import { isRealWallet, resolveSpeaker, type AuthPayload } from "@/lib/speaker";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 const HYPES_PER_WALLET_PER_DAY = 10;
@@ -17,6 +17,9 @@ export async function POST(request: Request) {
   const who = await resolveSpeaker(body?.auth, owner);
   if (!who.address) return Response.json({ error: "Sign in with your wallet to hype" }, { status: 401 });
   if (who.role === "owner") return Response.json({ error: "You can't hype your own Chog. Get your friends to." }, { status: 403 });
+  if (!(await isRealWallet(who.address))) {
+    return Response.json({ error: "This wallet is too new to hype. Hold a Chog or use a wallet with some Monad history." }, { status: 403 });
+  }
 
   const { count } = await supabaseAdmin()
     .from("aura_events")
