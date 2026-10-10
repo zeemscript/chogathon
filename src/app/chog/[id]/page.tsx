@@ -1,4 +1,4 @@
-import { ArrowLeft01Icon, FavouriteIcon, HeartbreakIcon, SparklesIcon } from "@hugeicons/core-free-icons";
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import Icon from "@/components/Icon";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -61,6 +61,33 @@ function ChogSkeleton() {
   );
 }
 
+// A Chog's character in plain words: no icons, just labels.
+function SoulNotes({ quirks, likes, dislikes }: { quirks: string[]; likes: string; dislikes: string }) {
+  const label = "label-mono text-[9.5px] text-muted-foreground/70";
+  return (
+    <div className="space-y-3 text-sm">
+      {quirks.length > 0 && (
+        <div>
+          <p className={label}>Quirks</p>
+          <ul className="mt-1.5 space-y-1 border-l border-line-bright pl-3 text-foreground/85">
+            {quirks.map((q, i) => (
+              <li key={q} className={cn("leading-snug", i >= 1 && "hidden sm:block")}>
+                {q}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1">
+        <dt className={label}>Loves</dt>
+        <dd className="text-foreground/85">{likes}</dd>
+        <dt className={label}>Can&apos;t stand</dt>
+        <dd className="text-foreground/85">{dislikes}</dd>
+      </dl>
+    </div>
+  );
+}
+
 async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] }) {
   const tokenId = parseTokenId((await params).id);
   if (!tokenId) notFound();
@@ -69,11 +96,9 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
   const soul = buildPersonality(chog.traits);
   const traits = Object.entries(chog.traits).filter(([, v]) => v && v !== "None");
   const tier = chog.traits.Tier ?? "Chog";
-  const notes = [
-    ...soul.quirks.map((q) => ({ text: q, icon: SparklesIcon, cls: "text-chog-soft" })),
-    { text: `loves ${soul.likes.join(" and ")}`, icon: FavouriteIcon, cls: "text-chog-pink" },
-    { text: `can't stand ${soul.dislikes.join(", ")}`, icon: HeartbreakIcon, cls: "text-chog-gold" },
-  ];
+  const notes = (
+    <SoulNotes quirks={soul.quirks} likes={soul.likes.join(" & ")} dislikes={soul.dislikes.join(", ")} />
+  );
 
   return (
     <div className="space-y-4">
@@ -98,14 +123,7 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
               {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway image */}
               <img src={chog.image} alt={chog.name} className="aspect-square w-full rounded-[19px] object-cover" />
             </div>
-            <ul className="space-y-2.5 text-sm text-muted-foreground">
-              {notes.map((q) => (
-                <li key={q.text} className="flex gap-2.5">
-                  <Icon icon={q.icon} size={15} className={cn("mt-0.5", q.cls)} />
-                  <span className="min-w-0 leading-snug">{q.text}</span>
-                </li>
-              ))}
-            </ul>
+            {notes}
           </div>
 
           {/* identity + soul + aura */}
@@ -141,15 +159,8 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
                 </span>
               ))}
             </div>
-            {/* phones/tablets: notes stay here (two on phones) */}
-            <ul className="grid gap-x-6 gap-y-1 text-sm text-muted-foreground sm:grid-cols-2 lg:hidden">
-              {notes.map((q, i) => (
-                <li key={q.text} className={cn("flex gap-2", i >= 2 && "hidden sm:flex")}>
-                  <Icon icon={q.icon} size={15} className={cn("mt-0.5", q.cls)} />
-                  <span className="min-w-0">{q.text}</span>
-                </li>
-              ))}
-            </ul>
+            {/* phones/tablets: notes stay beside the identity */}
+            <div className="lg:hidden">{notes}</div>
             <AuraPanel tokenId={tokenId} owner={owner} />
           </div>
         </div>
