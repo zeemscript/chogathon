@@ -1,3 +1,5 @@
+import { SparklesIcon } from "@hugeicons/core-free-icons";
+import Icon from "@/components/Icon";
 const ITEMS = [
   "every chog has a soul",
   "memories travel with the nft",
@@ -12,7 +14,7 @@ export default function Marquee() {
   const row = ITEMS.map((t) => (
     <span key={t} className="flex items-center gap-6 px-6">
       {t}
-      <span className="text-chog-soft">✦</span>
+      <Icon icon={SparklesIcon} size={14} className="text-chog-soft" />
     </span>
   ));
   return (

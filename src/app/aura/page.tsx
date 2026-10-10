@@ -1,3 +1,5 @@
+import { SparklesIcon } from "@hugeicons/core-free-icons";
+import Icon from "@/components/Icon";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -18,7 +20,7 @@ export default function AuraPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 pt-28 pb-24 sm:px-6">
       <div className="mb-10 space-y-4">
-        <p className="label-mono text-chog-soft">✦ Leaderboard</p>
+        <p className="label-mono flex items-center gap-2 text-chog-soft"><Icon icon={SparklesIcon} size={13} />Leaderboard</p>
         <h1 className="font-display text-[clamp(56px,10vw,120px)] leading-[0.85]">
           Aura <span className="text-gradient">ranks</span>
         </h1>

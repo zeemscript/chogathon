@@ -18,15 +18,8 @@ export type AuraSource =
   | "chog_feed"
   | "neglect";
 
-export const TIERS = [
-  { name: "Dormant", min: 0, social: 0 },
-  { name: "Awakened", min: 25, social: 0 },
-  { name: "Known", min: 100, social: 30 },
-  { name: "Famous", min: 300, social: 150 },
-  { name: "Legendary Soul", min: 800, social: 400 },
-] as const;
-
-export type TierName = (typeof TIERS)[number]["name"];
+export { TIERS, type TierName } from "./tiers";
+import { TIERS, type TierName } from "./tiers";
 
 // Daily caps per source (points per Chog per UTC day).
 const DAILY_CAP: Partial<Record<AuraSource, number>> = {

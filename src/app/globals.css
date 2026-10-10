@@ -76,6 +76,8 @@
   --animate-pulse-dot: pulse-dot 2s ease-in-out infinite;
   --animate-chip-pulse: chip-pulse 2.2s ease-in-out infinite;
   --animate-rise: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  --animate-spark: spark 3.2s ease-out infinite;
+  --animate-core: core 3s ease-in-out infinite;
 
   @keyframes float {
     0%, 100% { transform: translate3d(0, 0, 0); }
@@ -96,6 +98,15 @@
   @keyframes chip-pulse {
     0%, 100% { box-shadow: 0 0 12px rgba(131, 110, 249, 0.45); }
     50% { box-shadow: 0 0 30px rgba(131, 110, 249, 0.45), 0 0 60px rgba(168, 85, 247, 0.35); }
+  }
+  @keyframes spark {
+    0% { transform: translateY(0) scale(0.4); opacity: 0; }
+    25% { opacity: 1; }
+    100% { transform: translateY(-58px) scale(1); opacity: 0; }
+  }
+  @keyframes core {
+    0%, 100% { transform: scale(0.92); opacity: 0.55; }
+    50% { transform: scale(1.08); opacity: 0.95; }
   }
   @keyframes rise {
     from { opacity: 0; transform: translateY(34px) scale(0.96); }

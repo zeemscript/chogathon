@@ -1,3 +1,5 @@
+import { ArrowLeft01Icon, FavouriteIcon, HeartbreakIcon, SparklesIcon } from "@hugeicons/core-free-icons";
+import Icon from "@/components/Icon";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -71,7 +73,7 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
   return (
     <div className="space-y-6">
       <Link href="/#meet" className="label-mono relative z-10 inline-block text-muted-foreground transition-colors hover:text-foreground">
-        ← All Chogs
+        <span className="inline-flex items-center gap-1.5"><Icon icon={ArrowLeft01Icon} size={14} />All Chogs</span>
       </Link>
 
       {/* PROFILE HEADER */}
@@ -126,16 +128,16 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
             <ul className="grid gap-x-6 gap-y-1.5 text-sm text-muted-foreground sm:grid-cols-2">
               {soul.quirks.map((q) => (
                 <li key={q} className="flex gap-2">
-                  <span className="text-chog-soft">✦</span>
+                  <Icon icon={SparklesIcon} size={15} className="mt-0.5 text-chog-soft" />
                   {q}
                 </li>
               ))}
               <li className="flex gap-2">
-                <span className="text-chog-pink">♥</span>
+                <Icon icon={FavouriteIcon} size={15} className="mt-0.5 text-chog-pink" />
                 loves {soul.likes.join(" and ")}
               </li>
               <li className="flex gap-2">
-                <span className="text-chog-gold">✕</span>
+                <Icon icon={HeartbreakIcon} size={15} className="mt-0.5 text-chog-gold" />
                 can&apos;t stand {soul.dislikes.join(", ")}
               </li>
             </ul>

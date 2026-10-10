@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowRight01Icon, FavouriteIcon, Sword01Icon } from "@hugeicons/core-free-icons";
+import Icon from "@/components/Icon";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -46,7 +48,7 @@ function Avatar({ c, className }: { c?: Card; className?: string }) {
   );
 }
 
-function Pair({ a, b, color, label, note }: { a?: Card; b?: Card; color: string; label: string; note?: string | null }) {
+function Pair({ a, b, color, label, note }: { a?: Card; b?: Card; color: string; label: React.ReactNode; note?: string | null }) {
   return (
     <div className="rounded-xl border border-border bg-night-2/60 p-3">
       <div className="flex items-center gap-2">
@@ -92,7 +94,7 @@ export function TownLeft() {
       <Panel title="Hot feuds" dot="bg-orange-400">
         <div className="space-y-2.5">
           {data.feuds.length ? (
-            data.feuds.map((f) => <Pair key={`${f.a}:${f.b}`} a={f.aChog} b={f.bChog} color="text-chog-pink" label="vs" note={f.grudge} />)
+            data.feuds.map((f) => <Pair key={`${f.a}:${f.b}`} a={f.aChog} b={f.bChog} color="text-chog-pink" label={<Icon icon={Sword01Icon} size={16} />} note={f.grudge} />)
           ) : (
             <p className="text-sm text-muted-foreground">Peace on Monad. Suspicious.</p>
           )}
@@ -123,7 +125,7 @@ export function TownRight() {
         <Panel title="Besties" dot="bg-chog-ok">
           <div className="space-y-2.5">
             {data.besties.map((f) => (
-              <Pair key={`${f.a}:${f.b}`} a={f.aChog} b={f.bChog} color="text-chog-ok" label="♥" />
+              <Pair key={`${f.a}:${f.b}`} a={f.aChog} b={f.bChog} color="text-chog-ok" label={<Icon icon={FavouriteIcon} size={16} />} />
             ))}
           </div>
         </Panel>
@@ -134,7 +136,7 @@ export function TownRight() {
           Every Chog can end up in the Square. Talk to yours and it&apos;ll bring the gossip to you.
         </p>
         <Button className="mt-4 w-full" nativeButton={false} render={<Link href="/#mine" />}>
-          Find my Chog →
+          Find my Chog <Icon icon={ArrowRight01Icon} size={16} />
         </Button>
       </section>
     </div>

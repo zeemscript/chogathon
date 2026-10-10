@@ -1,3 +1,5 @@
+import { ArrowRight01Icon, SparklesIcon } from "@hugeicons/core-free-icons";
+import Icon from "@/components/Icon";
 import Link from "next/link";
 import { Suspense } from "react";
 import ChogCard from "@/components/ChogCard";
@@ -50,7 +52,7 @@ export default function Home() {
             </p>
             <div className="mx-auto mt-8 grid max-w-sm gap-3 sm:flex sm:max-w-none sm:justify-center lg:justify-start">
               <Button size="lg" variant="hero" nativeButton={false} render={<Link href="/#mine" />}>
-                Wake my Chog →
+                Wake my Chog <Icon icon={ArrowRight01Icon} size={16} />
               </Button>
               <Button size="lg" variant="outline" nativeButton={false} render={<Link href="/chog/561" />}>
                 Meet a Legendary
@@ -127,7 +129,7 @@ export default function Home() {
               and your Chog brings it up when you talk to it.
             </p>
             <Button variant="outline" nativeButton={false} render={<Link href="/town" />}>
-              Enter Town Square →
+              Enter Town Square <Icon icon={ArrowRight01Icon} size={16} />
             </Button>
           </div>
           <TownFeed limit={4} />
@@ -156,7 +158,7 @@ export default function Home() {
       <footer className="border-t border-border py-10">
         <div className="label-mono mx-auto flex max-w-6xl flex-wrap justify-between gap-4 px-4 text-muted-foreground sm:px-6">
           <span>Chog Souls · built for Chogathon 2026</span>
-          <span>gchog ✦ take the nft out, the soul is gone</span>
+          <span className="inline-flex items-center gap-2">gchog <Icon icon={SparklesIcon} size={12} className="text-chog-soft" /> take the nft out, the soul is gone</span>
         </div>
       </footer>
     </>
@@ -166,7 +168,7 @@ export default function Home() {
 function SectionTitle({ eyebrow, title }: { eyebrow: string; title: React.ReactNode }) {
   return (
     <div className="space-y-3">
-      <p className="label-mono text-chog-soft">✦ {eyebrow}</p>
+      <p className="label-mono flex items-center gap-2 text-chog-soft"><Icon icon={SparklesIcon} size={13} />{eyebrow}</p>
       <h2 className="font-display text-[clamp(44px,6vw,80px)] leading-[0.9]">{title}</h2>
     </div>
   );

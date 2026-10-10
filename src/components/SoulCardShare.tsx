@@ -1,5 +1,7 @@
 "use client";
 
+import { Download04Icon, Link01Icon, NewTwitterIcon, Tick02Icon } from "@hugeicons/core-free-icons";
+import Icon from "@/components/Icon";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -56,16 +58,16 @@ export default function SoulCardShare({ tokenId }: { tokenId: number }) {
       </div>
       <div className="flex flex-wrap gap-2 border-t border-border p-4">
         <Button onClick={shareOnX}>
-          <svg viewBox="0 0 24 24" aria-hidden className="size-4 fill-current">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-          </svg>
+          <Icon icon={NewTwitterIcon} size={15} />
           Share on X
         </Button>
         <Button variant="outline" nativeButton={false} render={<a href={`/api/card/${tokenId}?download=1`} download />}>
+          <Icon icon={Download04Icon} size={15} />
           Download
         </Button>
         <Button variant="ghost" onClick={copyLink}>
-          {copied ? "Copied ✓" : "Copy link"}
+          <Icon icon={copied ? Tick02Icon : Link01Icon} size={15} />
+          {copied ? "Copied" : "Copy link"}
         </Button>
       </div>
     </section>

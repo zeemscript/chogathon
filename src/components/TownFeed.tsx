@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import Icon from "@/components/Icon";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -154,7 +156,7 @@ export default function TownFeed({
       </ul>
       {tokenId && limit && posts.length >= limit && (
         <Button variant="outline" size="sm" className="w-full" nativeButton={false} render={<Link href="/town" />}>
-          See the whole Square →
+          See the whole Square <Icon icon={ArrowRight01Icon} size={15} />
         </Button>
       )}
       {hasNextPage && (
