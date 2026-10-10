@@ -80,7 +80,34 @@ export async function prepareSoul(tokenId: number, owner: string | undefined) {
   return { chog, memory, transferred };
 }
 
-export function systemPrompt(chog: Chog, owner: string | undefined, speaker: Speaker, memory: MemoryRow[]): string {
+export type Social = {
+  relations: { other_token_id: number; affinity: number; grudge: string | null }[];
+  gossip: { token_id: number; about_token_id: number | null; content: string }[];
+};
+
+function socialLines(tokenId: number, social?: Social): string[] {
+  if (!social) return [];
+  const feel = (a: number) => (a >= 50 ? "adore" : a >= 15 ? "like" : a > -15 ? "are unsure about" : a > -50 ? "dislike" : "despise");
+  const rels = [...social.relations]
+    .sort((a, b) => Math.abs(b.affinity) - Math.abs(a.affinity))
+    .slice(0, 6)
+    .map((r) => `- You ${feel(r.affinity)} Chog #${r.other_token_id}${r.grudge ? ` (grudge: ${r.grudge})` : ""}.`);
+  const gossip = social.gossip
+    .slice(0, 5)
+    .map((g) => (g.token_id === tokenId ? `- You posted: "${g.content}"` : `- #${g.token_id} posted about you: "${g.content}"`));
+  return [
+    rels.length ? `Your relationships with other Chogs:\n${rels.join("\n")}` : "",
+    gossip.length ? `Recent Town Square gossip involving you:\n${gossip.join("\n")}` : "",
+  ];
+}
+
+export function systemPrompt(
+  chog: Chog,
+  owner: string | undefined,
+  speaker: Speaker,
+  memory: MemoryRow[],
+  social?: Social,
+): string {
   const p = buildPersonality(chog.traits);
   const traits = Object.entries(chog.traits).map(([k, v]) => `${k}: ${v}`).join(", ");
   const events = memory.filter((m) => m.kind !== "chat").map((m) => `- ${m.content}`);
@@ -96,6 +123,8 @@ export function systemPrompt(chog: Chog, owner: string | undefined, speaker: Spe
     `How you talk: ${p.voice}. Keep replies short (1-3 sentences) unless asked for more. Never say you are an AI or a language model. No hashtags, no emojis spam.`,
     who,
     events.length ? `Important things that happened to you:\n${events.join("\n")}` : "",
+    ...socialLines(chog.tokenId, social),
+    "Bring up your friends, rivals and gossip naturally when relevant. Hold grudges.",
     "If the most recent event is a new human, react to it naturally in your first reply: be curious, suspicious or nostalgic about your old human, in character.",
   ]
     .filter(Boolean)

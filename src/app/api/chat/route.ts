@@ -5,6 +5,30 @@ import { AUTH_TTL_MS, authMessage } from "@/lib/auth";
 import { parseTokenId } from "@/lib/chogs";
 import { getOwner } from "@/lib/owners";
 import { prepareSoul, remember, systemPrompt, type Speaker } from "@/lib/soul";
+import { getRelations, listPosts, nudgeRelation } from "@/lib/town";
+
+// Mentions like "#123" or "chog 123" in a message.
+function mentionedChogs(text: string, self: number): number[] {
+  const ids = [...text.matchAll(/(?:#|chog\s*#?)(\d{1,4})\b/gi)].map((m) => parseTokenId(m[1])).filter((n): n is number => !!n);
+  return [...new Set(ids)].filter((id) => id !== self).slice(0, 3);
+}
+
+const NEGATIVE = /\b(hate|ugly|stupid|fake|rug|scam|loser|worse|trash|copy|copied|annoying|weird|rival|fight|enemy)\b/i;
+const POSITIVE = /\b(love|cool|best|friend|cute|nice|great|amazing|respect|gm|legend|bestie)\b/i;
+
+// When the owner talks about another Chog, it colours how this Chog feels.
+async function absorbMentions(tokenId: number, message: string, owner: boolean) {
+  const weight = owner ? 1 : 0.4; // visitors are less trusted
+  for (const other of mentionedChogs(message, tokenId)) {
+    if (NEGATIVE.test(message)) {
+      await nudgeRelation(tokenId, other, -12 * weight, owner ? `my human said: "${message.slice(0, 80)}"` : undefined);
+    } else if (POSITIVE.test(message)) {
+      await nudgeRelation(tokenId, other, 10 * weight);
+    } else {
+      await nudgeRelation(tokenId, other, 0);
+    }
+  }
+}
 
 type Body = {
   tokenId: number;
@@ -39,7 +63,11 @@ export async function POST(request: NextRequest) {
 
   const owner = await getOwner(tokenId);
   const speaker = await resolveSpeaker(body?.auth, owner);
-  const { chog, memory } = await prepareSoul(tokenId, owner);
+  const [{ chog, memory }, relations, gossip] = await Promise.all([
+    prepareSoul(tokenId, owner),
+    getRelations(tokenId),
+    listPosts({ tokenId, limit: 5 }),
+  ]);
 
   // Owners get the full shared history; visitors only get their own thread.
   const turns = memory
@@ -59,7 +87,7 @@ export async function POST(request: NextRequest) {
     temperature: 1.1,
     max_tokens: 300,
     messages: [
-      { role: "system", content: systemPrompt(chog, owner, speaker, memory) },
+      { role: "system", content: systemPrompt(chog, owner, speaker, memory, { relations, gossip }) },
       ...turns,
       { role: "user", content: message },
     ],
@@ -82,6 +110,7 @@ export async function POST(request: NextRequest) {
             controller.enqueue(encoder.encode(text));
           }
         }
+        await absorbMentions(tokenId, message, speaker.role === "owner").catch(() => {});
         if (reply) {
           await remember(tokenId, [
             { kind: "chat", role: "user", content: message, owner: memoryOwner },

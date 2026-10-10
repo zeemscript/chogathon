@@ -3,10 +3,13 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import ChatPanel from "@/components/ChatPanel";
 import OwnerBadge from "@/components/OwnerBadge";
+import Relations from "@/components/Relations";
+import TownFeed from "@/components/TownFeed";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getChog, parseTokenId } from "@/lib/chogs";
 import { getOwner } from "@/lib/owners";
 import { buildPersonality } from "@/lib/personality";
+import { getRelations } from "@/lib/town";
 
 export default function ChogPage({ params }: PageProps<"/chog/[id]">) {
   return (
@@ -34,7 +37,7 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
   const tokenId = parseTokenId((await params).id);
   if (!tokenId) notFound();
   const chog = getChog(tokenId)!;
-  const owner = await getOwner(tokenId);
+  const [owner, relations] = await Promise.all([getOwner(tokenId), getRelations(tokenId).catch(() => [])]);
   const soul = buildPersonality(chog.traits);
   const traits = Object.entries(chog.traits).filter(([, v]) => v && v !== "None");
 
@@ -105,6 +108,16 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
           </div>
 
           <ChatPanel tokenId={tokenId} name={chog.name} owner={owner} />
+
+          <section className="space-y-4">
+            <p className="label-mono text-chog-soft">✦ Friends &amp; rivals</p>
+            <Relations relations={relations} />
+          </section>
+
+          <section className="space-y-4">
+            <p className="label-mono text-chog-soft">✦ In the Square</p>
+            <TownFeed tokenId={tokenId} compact />
+          </section>
 
           <section className="space-y-4">
             <p className="label-mono text-chog-soft">✦ Traits</p>
