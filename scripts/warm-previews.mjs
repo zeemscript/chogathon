@@ -15,3 +15,4 @@ for (const page of pages) {
   const res = await fetch(img, { headers: { "user-agent": "Twitterbot/1.0" } });
   console.log(`${page}: ${res.status} ${res.headers.get("content-type")} ${Date.now() - t}ms`);
 }
+process.exit(0); // keep-alive sockets would otherwise hold the process open
