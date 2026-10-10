@@ -1,9 +1,10 @@
 import { type NextRequest } from "next/server";
-import { isAddress, verifyMessage } from "viem";
 import { CHAT_MODEL, deepseek } from "@/lib/ai";
-import { AUTH_TTL_MS, authMessage } from "@/lib/auth";
+import { addLoyalty, auraDay, award, getAura } from "@/lib/aura";
+import { supabaseAdmin } from "@/lib/supabase/server";
 import { parseTokenId } from "@/lib/chogs";
 import { getOwner } from "@/lib/owners";
+import { resolveSpeaker, visitorId, type AuthPayload } from "@/lib/speaker";
 import { prepareSoul, remember, systemPrompt, type Speaker } from "@/lib/soul";
 import { getRelations, listPosts, nudgeRelation } from "@/lib/town";
 
@@ -33,26 +34,18 @@ async function absorbMentions(tokenId: number, message: string, owner: boolean) 
 type Body = {
   tokenId: number;
   message: string;
-  auth?: { address: string; issuedAt: string; signature: `0x${string}` };
+  auth?: AuthPayload;
 };
 
-// Resolve who is talking. A valid signature from the current holder = owner.
-async function resolveSpeaker(auth: Body["auth"], owner: string | undefined): Promise<Speaker> {
-  // Dev only: DEV_IMPERSONATE_OWNER=1 treats every speaker as the owner.
-  if (process.env.NODE_ENV !== "production" && process.env.DEV_IMPERSONATE_OWNER === "1" && owner) {
-    return { role: "owner", address: owner };
+// Visitors make a Chog famous (once per visitor per day); owners earn care.
+async function earnChatAura(request: Request, tokenId: number, speaker: Speaker) {
+  if (speaker.role === "owner") {
+    await award(tokenId, "owner_chat", 1, { actor: speaker.address });
+    await addLoyalty(tokenId, 2);
+  } else {
+    const who = visitorId(request, speaker);
+    await award(tokenId, "visitor_chat", 2, { actor: who, dedupeKey: `visit:${tokenId}:${who}:${auraDay()}` });
   }
-  if (!auth || !isAddress(auth.address)) return { role: "visitor" };
-  const age = Date.now() - Date.parse(auth.issuedAt);
-  if (!(age >= 0 && age < AUTH_TTL_MS)) return { role: "visitor" };
-  const ok = await verifyMessage({
-    address: auth.address,
-    message: authMessage(auth.address, auth.issuedAt),
-    signature: auth.signature,
-  }).catch(() => false);
-  if (!ok) return { role: "visitor" };
-  const address = auth.address.toLowerCase();
-  return address === owner ? { role: "owner", address } : { role: "visitor", address };
 }
 
 export async function POST(request: NextRequest) {
@@ -63,11 +56,14 @@ export async function POST(request: NextRequest) {
 
   const owner = await getOwner(tokenId);
   const speaker = await resolveSpeaker(body?.auth, owner);
-  const [{ chog, memory }, relations, gossip] = await Promise.all([
+  const [{ chog, memory }, relations, gossip, aura] = await Promise.all([
     prepareSoul(tokenId, owner),
     getRelations(tokenId),
     listPosts({ tokenId, limit: 5 }),
+    getAura(tokenId).catch(() => undefined),
   ]);
+  const { data: state } = await supabaseAdmin().from("chog_state").select("loyalty").eq("token_id", tokenId).maybeSingle();
+  const standing = aura && { tier: aura.tier, score: aura.score, loyalty: state?.loyalty ?? 0 };
 
   // Owners get the full shared history; visitors only get their own thread.
   const turns = memory
@@ -87,7 +83,7 @@ export async function POST(request: NextRequest) {
     temperature: 1.1,
     max_tokens: 300,
     messages: [
-      { role: "system", content: systemPrompt(chog, owner, speaker, memory, { relations, gossip }) },
+      { role: "system", content: systemPrompt(chog, owner, speaker, memory, { relations, gossip }, standing) },
       ...turns,
       { role: "user", content: message },
     ],
@@ -111,6 +107,7 @@ export async function POST(request: NextRequest) {
           }
         }
         await absorbMentions(tokenId, message, speaker.role === "owner").catch(() => {});
+        await earnChatAura(request, tokenId, speaker).catch((err) => console.error("aura", err));
         if (reply) {
           await remember(tokenId, [
             { kind: "chat", role: "user", content: message, owner: memoryOwner },

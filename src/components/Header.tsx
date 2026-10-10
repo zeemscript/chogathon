@@ -20,6 +20,9 @@ export default function Header() {
           <Link href="/#meet" className="label-mono text-muted-foreground transition-colors hover:text-foreground">
             Meet
           </Link>
+          <Link href="/aura" className="label-mono text-muted-foreground transition-colors hover:text-foreground">
+            Aura ranks
+          </Link>
           <Link href="/town" className="label-mono flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground">
             <span className="size-1.5 animate-pulse-dot rounded-full bg-chog-pink" />
             Town Square

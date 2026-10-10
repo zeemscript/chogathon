@@ -38,6 +38,8 @@ export async function syncOwner(tokenId: number, owner: string | undefined) {
     owner,
     previous_owner: state?.owner ?? null,
     owner_since: now,
+    last_care_at: null,
+    loyalty: 0, // the soul stays; trust in the new human starts from zero
     updated_at: now,
   });
   if (!state) return { transferred: false }; // first time we've seen this Chog
@@ -80,6 +82,8 @@ export async function prepareSoul(tokenId: number, owner: string | undefined) {
   return { chog, memory, transferred };
 }
 
+export type Standing = { tier: string; score: number; loyalty: number };
+
 export type Social = {
   relations: { other_token_id: number; affinity: number; grudge: string | null }[];
   gossip: { token_id: number; about_token_id: number | null; content: string }[];
@@ -107,6 +111,7 @@ export function systemPrompt(
   speaker: Speaker,
   memory: MemoryRow[],
   social?: Social,
+  standing?: Standing,
 ): string {
   const p = buildPersonality(chog.traits);
   const traits = Object.entries(chog.traits).map(([k, v]) => `${k}: ${v}`).join(", ");
@@ -124,6 +129,9 @@ export function systemPrompt(
     who,
     events.length ? `Important things that happened to you:\n${events.join("\n")}` : "",
     ...socialLines(chog.tokenId, social),
+    standing
+      ? `Your fame: ${standing.tier} (Aura ${standing.score}). ${standing.tier === "Famous" || standing.tier === "Legendary Soul" ? "You know you're a celebrity and act like it." : "You want to be famous one day."} Loyalty to your current human: ${standing.loyalty}/100 (${standing.loyalty < 20 ? "you barely trust them yet" : standing.loyalty < 60 ? "warming up to them" : "deeply loyal"}).`
+      : "",
     "Bring up your friends, rivals and gossip naturally when relevant. Hold grudges.",
     "If the most recent event is a new human, react to it naturally in your first reply: be curious, suspicious or nostalgic about your old human, in character.",
   ]

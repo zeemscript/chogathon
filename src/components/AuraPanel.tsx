@@ -1,0 +1,203 @@
+"use client";
+
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { parseUnits } from "viem";
+import { useWriteContract } from "wagmi";
+import { Button } from "@/components/ui/button";
+import { useOwnerAuth } from "@/hooks/useOwnerAuth";
+import { CHOG_TOKEN } from "@/lib/chain";
+import { TIER_STYLE } from "@/lib/tiers";
+import { cn } from "@/lib/utils";
+
+type Aura = {
+  score: number;
+  social: number;
+  care: number;
+  chog: number;
+  chogRaw: number;
+  neglect: number;
+  tier: string;
+  next?: { name: string; min: number; social: number };
+  progress: number;
+  blockedBySocial: boolean;
+  idleDays: number;
+  fading: boolean;
+};
+
+const TREASURY = process.env.NEXT_PUBLIC_CHOG_TREASURY as `0x${string}` | undefined;
+const erc20 = [
+  {
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
+  },
+] as const;
+
+function Bar({ label, value, total, cls, note }: { label: string; value: number; total: number; cls: string; note?: string }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="label-mono text-[10px] text-muted-foreground">{label}</span>
+        <span className="font-mono text-xs">
+          {value}
+          {note && <span className="ml-1.5 text-muted-foreground">{note}</span>}
+        </span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div className={cn("h-full rounded-full transition-all duration-700", cls)} style={{ width: `${total ? (value / total) * 100 : 0}%` }} />
+      </div>
+    </div>
+  );
+}
+
+export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?: string }) {
+  const qc = useQueryClient();
+  const { isOwner, auth, signIn, signing } = useOwnerAuth(owner);
+  const { writeContractAsync } = useWriteContract();
+  const [busy, setBusy] = useState<string>();
+  const [flash, setFlash] = useState<string>();
+
+  const { data: aura } = useQuery({
+    queryKey: ["aura", tokenId],
+    refetchInterval: 30_000,
+    queryFn: async (): Promise<Aura> => (await fetch(`/api/aura/${tokenId}`)).json(),
+  });
+
+  async function care() {
+    setBusy("care");
+    setFlash(undefined);
+    try {
+      const a = auth ?? (await signIn());
+      const res = await fetch("/api/care", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tokenId, auth: a }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error);
+      setFlash(j.alreadyToday ? "Already checked in today. It noticed." : `+${j.granted} Aura · it missed you`);
+      qc.setQueryData(["aura", tokenId], j.aura);
+    } catch (err) {
+      setFlash(err instanceof Error ? err.message : "Couldn't check in");
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  async function feed(amount: number) {
+    if (!TREASURY) return;
+    setBusy(`feed${amount}`);
+    setFlash(undefined);
+    try {
+      const txHash = await writeContractAsync({
+        address: CHOG_TOKEN,
+        abi: erc20,
+        functionName: "transfer",
+        args: [TREASURY, parseUnits(String(amount), 18)],
+      });
+      setFlash("Feeding… waiting for Monad");
+      const res = await fetch("/api/feed", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tokenId, txHash }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error);
+      setFlash(`Nom. +${j.points} Aura from ${j.amount} $CHOG`);
+      qc.setQueryData(["aura", tokenId], j.aura);
+    } catch (err) {
+      setFlash(err instanceof Error ? err.message.split("\n")[0] : "Feeding failed");
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  const style = TIER_STYLE[aura?.tier ?? "Dormant"] ?? TIER_STYLE.Dormant;
+  const total = aura ? Math.max(1, aura.social + aura.care + aura.chog) : 1;
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-line-bright bg-card shadow-card">
+      <div className="flex flex-wrap items-center gap-5 p-5">
+        {/* Aura orb */}
+        <div className="relative grid size-24 shrink-0 place-items-center">
+          <div
+            className={cn("absolute inset-0 animate-[spin_9s_linear_infinite] rounded-full bg-gradient-to-br p-[3px]", style.ring)}
+            style={{ boxShadow: `0 0 38px ${style.glow}` }}
+          >
+            <div className="size-full rounded-full bg-card" />
+          </div>
+          <div className="relative text-center">
+            <div className="font-display text-4xl leading-none">{aura?.score ?? "…"}</div>
+            <div className="label-mono text-[9px] text-muted-foreground">Aura</div>
+          </div>
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-2">
+          <p className="label-mono text-chog-soft">✦ Soul worth</p>
+          <p className={cn("font-display text-3xl leading-none", style.text)}>{aura?.tier ?? "…"}</p>
+          {aura?.next && (
+            <div className="space-y-1">
+              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700", style.ring)}
+                  style={{ width: `${Math.round(aura.progress * 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {aura.blockedBySocial
+                  ? `Needs ${aura.next.social} social Aura to become ${aura.next.name}. Only others can make it famous.`
+                  : `${aura.next.min - aura.score} Aura to ${aura.next.name}`}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {aura && (
+        <div className="grid gap-3 border-t border-border bg-night-2/50 p-5 sm:grid-cols-3">
+          <Bar label="Social · from others" value={aura.social} total={total} cls="bg-chog-pink" />
+          <Bar label="Care · from its human" value={aura.care} total={total} cls="bg-chog-ok" />
+          <Bar
+            label="$CHOG · max 30%"
+            value={aura.chog}
+            total={total}
+            cls="bg-chog-gold"
+            note={aura.chogRaw > aura.chog ? `(capped from ${aura.chogRaw})` : undefined}
+          />
+        </div>
+      )}
+
+      {aura?.fading && (
+        <p className="border-t border-chog-pink/30 bg-chog-pink/10 px-5 py-3 text-sm text-pink-200">
+          Its human hasn&apos;t checked in for {aura.idleDays} days. Its Aura is fading ({aura.neglect}).
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2 border-t border-border p-4">
+        {isOwner ? (
+          <Button size="sm" variant="ok" onClick={care} disabled={!!busy || signing}>
+            {busy === "care" || signing ? "…" : "Daily check-in"}
+          </Button>
+        ) : (
+          <span className="label-mono text-[10px] text-muted-foreground">Talk to it to make it famous ✦</span>
+        )}
+        {TREASURY ? (
+          [100, 500, 1000].map((n) => (
+            <Button key={n} size="sm" variant="outline" onClick={() => feed(n)} disabled={!!busy}>
+              {busy === `feed${n}` ? "…" : `Feed ${n} $CHOG`}
+            </Button>
+          ))
+        ) : (
+          <span className="label-mono ml-auto text-[10px] text-muted-foreground/60">$CHOG feeding opens soon</span>
+        )}
+        {flash && <p className="w-full pt-1 text-sm text-chog-soft">{flash}</p>}
+      </div>
+    </section>
+  );
+}

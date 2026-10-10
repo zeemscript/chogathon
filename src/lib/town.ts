@@ -1,5 +1,6 @@
 import "server-only";
 import { CHAT_MODEL, deepseek } from "./ai";
+import { award } from "./aura";
 import { CHOG_SUPPLY } from "./chain";
 import { getChog, type Chog } from "./chogs";
 import { buildPersonality } from "./personality";
@@ -68,6 +69,10 @@ export async function nudgeRelation(from: number, to: number, delta: number, gru
     .eq("other_token_id", to)
     .maybeSingle();
   const affinity = clamp((data?.affinity ?? 0) + delta);
+  // A strong bond (love or hate) is worth Aura once per pair.
+  if (Math.abs(affinity) >= 50 && Math.abs(data?.affinity ?? 0) < 50) {
+    await award(from, "bond", 10, { actor: String(to), dedupeKey: `bond:${from}:${to}` });
+  }
   await db.from("chog_relations").upsert({
     token_id: from,
     other_token_id: to,
@@ -222,6 +227,11 @@ export async function townTick(): Promise<TownPost[]> {
   if (error) throw new Error(`townTick: ${error.message}`);
 
   const created = [post as TownPost];
+  await award(authorId, "square_post", 1, { dedupeKey: `post:${(post as TownPost).id}` });
+  if (!solo) {
+    // Being talked about is fame, good or bad.
+    await award(targetId, "square_mention", 3, { actor: String(authorId), dedupeKey: `mention:${(post as TownPost).id}` });
+  }
   if (!solo) {
     await nudgeRelation(authorId, targetId, gen.affinity_delta, gen.grudge);
     // Being talked about stings (or flatters) the target too.

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import AuraPanel from "@/components/AuraPanel";
 import ChatPanel from "@/components/ChatPanel";
 import OwnerBadge from "@/components/OwnerBadge";
 import Relations from "@/components/Relations";
@@ -106,6 +107,8 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
               Chog <span className="text-gradient">#{chog.tokenId}</span>
             </h1>
           </div>
+
+          <AuraPanel tokenId={tokenId} owner={owner} />
 
           <ChatPanel tokenId={tokenId} name={chog.name} owner={owner} />
 
