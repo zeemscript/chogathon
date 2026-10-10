@@ -37,7 +37,8 @@ export async function getStory(tokenId: number, currentOwner?: string): Promise<
     db.from("town_posts").select("content, created_at").eq("token_id", tokenId).order("created_at").limit(1),
     db.from("chog_memory").select("created_at").eq("token_id", tokenId).eq("kind", "chat").like("owner", "visitor:%").order("created_at").limit(1),
     db.from("chog_memory").select("created_at, owner").eq("token_id", tokenId).eq("kind", "chat").not("owner", "like", "visitor:%").order("created_at").limit(1),
-    getSales(tokenId).catch(() => []),
+    // Sale prices are a nice-to-have: never hold the story up for OpenSea.
+    Promise.race([getSales(tokenId), new Promise<[]>((r) => setTimeout(() => r([]), 1200))]).catch(() => []),
   ]);
   // Self-transfers aren't a change of owner.
   const history = { data: (historyRaw.data ?? []).filter((h) => h.from_address !== h.to_address) };

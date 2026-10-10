@@ -38,7 +38,14 @@ const config = createConfig({
 });
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  // Keep data between pages: going back to a Chog shows it instantly while it
+  // refreshes quietly in the background.
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { staleTime: 60_000, gcTime: 15 * 60_000, refetchOnWindowFocus: false } },
+      }),
+  );
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>

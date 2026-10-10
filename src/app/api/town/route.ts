@@ -2,6 +2,7 @@ import { after, type NextRequest } from "next/server";
 import { getChog, parseTokenId } from "@/lib/chogs";
 import { buildPersonality } from "@/lib/personality";
 import { listPosts, tickIfQuiet } from "@/lib/town";
+import { cachedJson } from "@/lib/http";
 
 // GET /api/town[?tokenId=N] -> latest Square posts, enriched for display.
 // Reading the feed also keeps it alive: if it's been quiet, a Chog speaks up.
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     const c = id ? getChog(id) : undefined;
     return c && { tokenId: c.tokenId, name: c.name, image: c.image, archetype: buildPersonality(c.traits).archetype };
   };
-  return Response.json({
+  return cachedJson({
     posts: posts.map((p) => ({ ...p, author: card(p.token_id), about: card(p.about_token_id) })),
-  });
+  }, 10);
 }

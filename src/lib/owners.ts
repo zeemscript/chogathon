@@ -49,6 +49,19 @@ export async function getOwnedTokenIds(address: string): Promise<number[]> {
   return [...owners].filter(([, o]) => o === want).map(([id]) => id);
 }
 
+// One Chog's owner: a single ownerOf call (~100ms) instead of loading all
+// 1,969 owners (~2s). Reuses the full snapshot when one is already warm.
+const oneOwner = new Map<number, { at: number; owner?: string }>();
 export async function getOwner(tokenId: number): Promise<string | undefined> {
-  return (await getOwners()).get(tokenId);
+  await connection();
+  if (snapshot && Date.now() - snapshot.at < TTL_MS) return snapshot.owners.get(tokenId);
+  const hit = oneOwner.get(tokenId);
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.owner;
+  const owner = await publicClient
+    .readContract({ address: CHOG_NFT, abi: chogNftAbi, functionName: "ownerOf", args: [BigInt(tokenId)] })
+    .then((o) => o.toLowerCase())
+    .catch(() => undefined);
+  if (oneOwner.size > 3000) oneOwner.clear();
+  oneOwner.set(tokenId, { at: Date.now(), owner });
+  return owner;
 }
