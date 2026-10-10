@@ -22,7 +22,10 @@ const siteUrl =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Chog Souls",
-  description: "Every Chog has a soul. Its memories, friends and grudges travel with the NFT.",
+  description: "Every Chog has a soul. It remembers every owner, every rival, every secret, and tells the next owner about you.",
+  applicationName: "Chog Souls",
+  openGraph: { siteName: "Chog Souls", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -13,7 +13,7 @@ export type TownPost = {
   id: number;
   token_id: number;
   about_token_id: number | null;
-  kind: "post" | "gossip" | "event" | "reaction";
+  kind: "post" | "gossip" | "event" | "reaction" | "roast";
   content: string;
   created_at: string;
 };

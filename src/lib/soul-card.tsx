@@ -16,7 +16,7 @@ import { getRelations, listPosts } from "./town";
 export const CARD_SIZE = { width: 1200, height: 630 };
 
 const fontDir = join(process.cwd(), "src/assets/fonts");
-const fonts = Promise.all([
+export const cardFonts = Promise.all([
   readFile(join(fontDir, "Koulen-400.woff")),
   readFile(join(fontDir, "Inter-400.woff")),
   readFile(join(fontDir, "Inter-600.woff")),
@@ -49,7 +49,7 @@ const RARITY: Record<string, { a: string; b: string; text: string }> = {
 // Satori can't decode the collection's WebP art, so convert to PNG at the
 // size we draw it. Cached per token+size: bestie/nemesis avatars repeat a lot.
 const art = new Map<string, string>();
-async function artDataUrl(tokenId: number, px: number): Promise<string | undefined> {
+export async function artDataUrl(tokenId: number, px: number): Promise<string | undefined> {
   const key = `${tokenId}:${px}`;
   if (art.has(key)) return art.get(key);
   if (!getChogRaw(tokenId)) return;
@@ -154,7 +154,7 @@ export async function renderSoulCard(tokenId: number): Promise<ImageResponse> {
     artDataUrl(tokenId, 400),
     d.bestie ? artDataUrl(d.bestie.tokenId, 100) : undefined,
     d.nemesis ? artDataUrl(d.nemesis.tokenId, 100) : undefined,
-    fonts,
+    cardFonts,
   ]);
   const t = TIER[d.aura.tier] ?? TIER.Dormant;
   const r = RARITY[d.tierName] ?? RARITY.Common;

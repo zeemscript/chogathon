@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/card/*": ["src/assets/fonts/**/*"],
     "/chog/*": ["src/assets/fonts/**/*"],
+    "/": ["src/assets/fonts/**/*"],
+    "/*": ["src/assets/fonts/**/*"],
   },
   partialPrefetching: true,
   turbopack: {

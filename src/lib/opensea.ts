@@ -36,21 +36,17 @@ const mon = (q: string | number, decimals = 18) => Number(q) / 10 ** decimals;
 export type Market = {
   floor?: number; // MON
   lastSale?: { price: number; symbol: string; at: string };
-  listing?: { price: number; symbol: string };
   url: string;
 };
 
 export async function getMarket(tokenId: number): Promise<Market> {
   type Stats = { total?: { floor_price?: number } };
   type Events = { asset_events?: { payment?: { quantity: string; symbol: string; decimals: number }; event_timestamp: number }[] };
-  type Best = { price?: { current?: { value: string; currency: string; decimals: number } } };
-  const [stats, sales, best] = await Promise.all([
+  const [stats, sales] = await Promise.all([
     os<Stats>(`collections/${SLUG}/stats`, 10 * 60_000),
     os<Events>(`events/chain/${CHAIN}/contract/${CHOG_NFT}/nfts/${tokenId}?event_type=sale&limit=1`, 10 * 60_000),
-    os<Best>(`listings/collection/${SLUG}/nfts/${tokenId}/best`, 5 * 60_000),
   ]);
   const sale = sales?.asset_events?.[0];
-  const cur = best?.price?.current;
   return {
     floor: stats?.total?.floor_price,
     lastSale: sale?.payment && {
@@ -58,7 +54,6 @@ export async function getMarket(tokenId: number): Promise<Market> {
       symbol: sale.payment.symbol,
       at: new Date(sale.event_timestamp * 1000).toISOString(),
     },
-    listing: cur && { price: mon(cur.value, cur.decimals), symbol: cur.currency },
     url: `https://opensea.io/item/${CHAIN}/${CHOG_NFT}/${tokenId}`,
   };
 }
@@ -90,4 +85,22 @@ export async function getCdnImage(tokenId: number): Promise<string | undefined> 
   const res = await os<Nft>(`chain/${CHAIN}/contract/${CHOG_NFT}/nfts/${tokenId}`, 24 * 3600_000);
   const url = res?.nft?.display_image_url ?? res?.nft?.image_url;
   return url && `${url}${url.includes("?") ? "&" : "?"}w=512`;
+}
+
+export type Sale = { tx: string; price: number; symbol: string; at: string };
+
+// Every sale of one Chog (price per transaction), for "Sold for X" in its story.
+export async function getSales(tokenId: number): Promise<Sale[]> {
+  type Page = {
+    asset_events?: { transaction: string; event_timestamp: number; payment?: { quantity: string; symbol: string; decimals: number } }[];
+  };
+  const page = await os<Page>(`events/chain/${CHAIN}/contract/${CHOG_NFT}/nfts/${tokenId}?event_type=sale&limit=50`, 10 * 60_000);
+  return (page?.asset_events ?? [])
+    .filter((e) => e.payment)
+    .map((e) => ({
+      tx: e.transaction,
+      price: mon(e.payment!.quantity, e.payment!.decimals),
+      symbol: e.payment!.symbol,
+      at: new Date(e.event_timestamp * 1000).toISOString(),
+    }));
 }
