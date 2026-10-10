@@ -1,5 +1,6 @@
 import "server-only";
 import { ImageResponse } from "next/og";
+import { SOUL_FLAME_DATA_URL } from "./logo-svg";
 import { artDataUrl, cardFonts, CARD_SIZE } from "./soul-card";
 
 // Brand images: favicon/app icon and the share (Open Graph) images for the
@@ -8,9 +9,8 @@ import { artDataUrl, cardFonts, CARD_SIZE } from "./soul-card";
 const NIGHT = "#0e0b1a";
 const mono = { fontFamily: "Mono", letterSpacing: 3, textTransform: "uppercase" as const };
 
-// The "S" mark from the header, at any size.
+// App icon: the Soul flame on a night tile (iOS shows transparency as black).
 export async function renderMark(px: number) {
-  const fonts = await cardFonts;
   return new ImageResponse(
     (
       <div
@@ -20,15 +20,14 @@ export async function renderMark(px: number) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          borderRadius: px * 0.24,
-          background: "linear-gradient(140deg, #a99bfc 0%, #836ef9 50%, #6f52e8 100%)",
-          boxShadow: "inset 0 -6px 0 rgba(0,0,0,.18)",
+          background: "radial-gradient(circle at 50% 40%, #2a1b5e 0%, #0e0b1a 75%)",
         }}
       >
-        <div style={{ fontFamily: "Koulen", fontSize: px * 0.72, lineHeight: 1, color: "#fff", marginTop: px * 0.08 }}>S</div>
+        {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori */}
+        <img src={SOUL_FLAME_DATA_URL} width={px * 0.78} height={px * 0.8} alt="" />
       </div>
     ),
-    { width: px, height: px, fonts },
+    { width: px, height: px },
   );
 }
 
@@ -52,9 +51,8 @@ function Backdrop() {
 function Brand() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-      <div style={{ display: "flex", width: 46, height: 46, borderRadius: 12, alignItems: "center", justifyContent: "center", background: "#836ef9", boxShadow: "4px 4px 0 rgba(0,0,0,.55)" }}>
-        <div style={{ fontFamily: "Koulen", fontSize: 32, color: "#fff", marginTop: 4 }}>S</div>
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori */}
+      <img src={SOUL_FLAME_DATA_URL} width={48} height={49} alt="" />
       <div style={{ display: "flex", fontFamily: "Koulen", fontSize: 34, color: "#f4f1fe" }}>
         <span>Chog</span>
         <span style={{ color: "#a99bfc", marginLeft: 10 }}>Souls</span>

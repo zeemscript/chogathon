@@ -6,6 +6,7 @@ import sharp from "sharp";
 import { auraLeaderboard, getAura, type Aura } from "./aura";
 import { getChogRaw } from "./chogs";
 import { fetchArt } from "./art";
+import { SOUL_FLAME_DATA_URL } from "./logo-svg";
 import { buildPersonality } from "./personality";
 import { supabaseAdmin } from "./supabase/server";
 import { getRelations, listPosts } from "./town";
@@ -339,7 +340,9 @@ export async function renderSoulCard(tokenId: number): Promise<ImageResponse> {
               )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-              <div style={{ display: "flex", fontFamily: "Koulen", fontSize: 30, lineHeight: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", fontFamily: "Koulen", fontSize: 30, lineHeight: 1 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori */}
+                <img src={SOUL_FLAME_DATA_URL} width={30} height={31} style={{ marginRight: 8 }} alt="" />
                 <span>Chog</span>
                 <span style={{ color: "#a99bfc", marginLeft: 8 }}>Souls</span>
               </div>
