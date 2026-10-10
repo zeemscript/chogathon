@@ -152,7 +152,7 @@ function Mini({ src, label, sub, color }: { src?: string; label: string; sub: st
 // The Chog's own art, blown up, blurred and saturated: every card gets its
 // own colours, so a feed full of Soul Cards never looks the same twice.
 const bgCache = new Map<number, string>();
-async function artBackdrop(tokenId: number): Promise<string | undefined> {
+export async function artBackdrop(tokenId: number): Promise<string | undefined> {
   if (bgCache.has(tokenId)) return bgCache.get(tokenId);
   try {
     const res = await fetchArt(tokenId);

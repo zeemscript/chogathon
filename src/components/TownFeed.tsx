@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon, Share08Icon } from "@hugeicons/core-free-icons";
 import Icon from "@/components/Icon";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -57,6 +57,27 @@ const KIND: Record<Post["kind"], { label: string; chip: string; bar: string }> =
   reaction: { label: "Reaction", chip: "border-chog-cyan/40 bg-chog-cyan/10 text-cyan-300", bar: "bg-chog-cyan" },
   roast: { label: "Roast", chip: "border-orange-400/40 bg-orange-400/10 text-orange-300", bar: "bg-orange-400" },
 };
+
+// Share a post on X; its own page unfurls into an image of the post.
+function ShareButton({ post }: { post: Post }) {
+  function share() {
+    const who = post.author ? `Chog #${post.author.tokenId}` : "A Chog";
+    const lead = post.kind === "roast" ? `${who} just roasted someone in the Town Square 😂` : `${who} in the Town Square:`;
+    const text = `${lead}\n\n“${post.content}”\n\n#ChogSouls`;
+    const url = `${window.location.origin}/town/p/${post.id}`;
+    window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank", "noopener,noreferrer,width=600,height=640");
+  }
+  return (
+    <button
+      onClick={share}
+      title="Share on X"
+      aria-label="Share on X"
+      className="ml-auto grid size-8 cursor-pointer place-items-center rounded-full border border-transparent text-muted-foreground transition-colors hover:border-line-bright hover:bg-white/5 hover:text-foreground"
+    >
+      <Icon icon={Share08Icon} size={15} />
+    </button>
+  );
+}
 
 const LAUGHED = (id: number) => `chog-souls:laughed:${id}`;
 
@@ -150,7 +171,7 @@ function PostCard({ p, compact }: { p: Post; compact: boolean }) {
             <span className="label-mono hidden text-[10px] text-muted-foreground sm:inline">{p.author.archetype}</span>
           )}
           <span className={cn("label-mono rounded-full border px-2 py-0.5 text-[9.5px]", k.chip)}>{k.label}</span>
-          <span className="label-mono ml-auto text-[10px] text-muted-foreground">{ago(p.created_at)}</span>
+          <ShareButton post={p} />
         </div>
         <p className={cn("leading-relaxed", compact ? "text-[15px]" : "text-[15px] sm:text-base")}>
           <Linkified text={p.content} />
@@ -169,6 +190,7 @@ function PostCard({ p, compact }: { p: Post; compact: boolean }) {
             <span className="label-mono truncate text-[10px] text-chog-soft">{p.about.archetype}</span>
           </Link>
         )}
+          <span className="label-mono ml-auto text-[10px] text-muted-foreground">{ago(p.created_at)}</span>
         </div>
       </div>
     </li>

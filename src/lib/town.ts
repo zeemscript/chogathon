@@ -365,3 +365,8 @@ export async function townStats(): Promise<TownStats> {
       .map((r) => ({ a: r.token_id, b: r.other_token_id, affinity: r.affinity })),
   };
 }
+
+export async function getPost(id: number): Promise<TownPost | undefined> {
+  const { data } = await supabaseAdmin().from("town_posts").select("*").eq("id", id).maybeSingle();
+  return (data as TownPost | null) ?? undefined;
+}

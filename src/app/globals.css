@@ -77,6 +77,9 @@
   --animate-chip-pulse: chip-pulse 2.2s ease-in-out infinite;
   --animate-rise: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) backwards;
   --animate-spark: spark 3.2s ease-out infinite;
+  --animate-flicker: flicker 1.6s ease-in-out infinite;
+  --animate-flicker-slow: flicker-slow 2.3s ease-in-out infinite;
+  --animate-ember: ember 2.4s ease-out infinite;
   --animate-core: core 3s ease-in-out infinite;
 
   @keyframes float {
@@ -98,6 +101,23 @@
   @keyframes chip-pulse {
     0%, 100% { box-shadow: 0 0 12px rgba(131, 110, 249, 0.45); }
     50% { box-shadow: 0 0 30px rgba(131, 110, 249, 0.45), 0 0 60px rgba(168, 85, 247, 0.35); }
+  }
+  /* Flame: sways and stretches from its base, like a real fire */
+  @keyframes flicker {
+    0%, 100% { transform: scale(1, 1) skewX(0deg); }
+    15% { transform: scale(0.96, 1.07) skewX(-3deg); }
+    35% { transform: scale(1.03, 0.95) skewX(2deg); }
+    55% { transform: scale(0.97, 1.09) skewX(3.5deg); }
+    75% { transform: scale(1.02, 0.97) skewX(-2deg); }
+  }
+  @keyframes flicker-slow {
+    0%, 100% { transform: scale(1.08, 1.02) skewX(4deg); opacity: 0.7; }
+    50% { transform: scale(0.94, 1.2) skewX(-5deg); opacity: 1; }
+  }
+  @keyframes ember {
+    0% { transform: translate(0, 0) scale(1); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translate(var(--dx, 4px), -42px) scale(0.3); opacity: 0; }
   }
   @keyframes spark {
     0% { transform: translateY(0) scale(0.4); opacity: 0; }
