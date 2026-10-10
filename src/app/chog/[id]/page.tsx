@@ -129,7 +129,6 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
               <img src={chog.image} alt={chog.name} className="aspect-square w-full rounded-[19px] object-cover" />
             </div>
             {notes}
-            <MarketStrip tokenId={tokenId} />
           </div>
 
           {/* identity + soul + aura */}
@@ -166,10 +165,7 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
               ))}
             </div>
             {/* phones/tablets: notes stay beside the identity */}
-            <div className="space-y-3 lg:hidden">
-              {notes}
-              <MarketStrip tokenId={tokenId} />
-            </div>
+            <div className="lg:hidden">{notes}</div>
             <AuraPanel tokenId={tokenId} owner={owner} />
           </div>
         </div>
@@ -187,6 +183,10 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
           gossip={<TownFeed tokenId={tokenId} compact limit={8} />}
           card={<SoulCardShare tokenId={tokenId} />}
           traits={
+            <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-white/[.03] px-4 py-3">
+              <MarketStrip tokenId={tokenId} />
+            </div>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {traits.map(([k, v]) => (
                 <div key={k} className="rounded-xl border border-border bg-white/[.03] px-4 py-3 transition-colors hover:border-line-bright">
@@ -195,6 +195,7 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
                 </div>
               ))}
             </dl>
+            </div>
           }
         />
       </div>
