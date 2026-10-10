@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:check": "node --env-file-if-exists=.env.local scripts/check-supabase.mjs",
-    "cache:metadata": "node --env-file-if-exists=.env.local scripts/cache-metadata.mjs"
+    "cache:metadata": "node --env-file-if-exists=.env.local scripts/cache-metadata.mjs",
+    "shot": "node scripts/shot.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -42,6 +43,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
+    "playwright-core": "^1.64.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

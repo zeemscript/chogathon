@@ -22,14 +22,14 @@ export default function Relations({ relations }: { relations: Relation[] }) {
     );
   }
   return (
-    <ul className="grid gap-3 sm:grid-cols-2">
+    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {top.map((r) => {
         const other = getChog(r.other_token_id);
         if (!other) return null;
         const l = label(r.affinity);
         const pct = Math.abs(r.affinity);
         return (
-          <li key={r.other_token_id}>
+          <li key={r.other_token_id} className="min-w-0">
             <Link
               href={`/chog/${other.tokenId}`}
               className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 transition-colors hover:border-line-bright"

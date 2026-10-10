@@ -30,23 +30,25 @@ export default function Home() {
   return (
     <>
       {/* HERO */}
-      <section className="relative overflow-hidden pt-32 pb-20 sm:pt-40">
-        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.15fr_1fr]">
-          <div className="relative z-10 animate-rise">
-            <span className="label-mono mb-6 inline-flex items-center gap-2.5 rounded-full border border-chog-soft/40 bg-chog/12 py-2 pr-4 pl-3 text-chog-soft shadow-[inset_0_1px_0_rgba(255,255,255,.14),0_10px_26px_-14px_rgba(131,110,249,.9)] backdrop-blur-md">
+      <section className="relative overflow-hidden pt-28 pb-16 sm:pt-36 lg:pb-24">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-[1.2fr_1fr] lg:gap-8">
+          <div className="relative z-10 animate-rise text-center lg:text-left">
+            <span className="label-mono mb-6 inline-flex items-center gap-2.5 rounded-full border border-chog-soft/40 bg-chog/12 py-2 pr-4 pl-3 text-[10.5px] text-chog-soft shadow-[inset_0_1px_0_rgba(255,255,255,.14),0_10px_26px_-14px_rgba(131,110,249,.9)] backdrop-blur-md sm:text-[11.5px]">
               <span className="size-[7px] animate-pulse-dot rounded-full bg-chog-soft shadow-[0_0_10px_#a99bfc]" />
               Chogathon 2026 · Live on Monad
             </span>
-            <h1 className="font-display text-[clamp(64px,11vw,148px)] leading-[0.82] [text-shadow:0_6px_44px_rgba(14,11,26,.8)]">
-              Every Chog
-              <br />
-              has a <em className="text-gradient not-italic">soul.</em>
+            {/* Each line is nowrap so the headline is always exactly two lines. */}
+            <h1 className="font-display text-[clamp(52px,16vw,104px)] leading-[0.84] [text-shadow:0_6px_44px_rgba(14,11,26,.8)] lg:text-[clamp(84px,8vw,140px)]">
+              <span className="block whitespace-nowrap">Every Chog</span>
+              <span className="block whitespace-nowrap">
+                has a <em className="text-gradient not-italic">soul.</em>
+              </span>
             </h1>
-            <p className="mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground">
+            <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg lg:mx-0">
               Talk to your Chog. It remembers you, makes friends and holds grudges. When it&apos;s sold, every
               memory goes with it to the next owner.
             </p>
-            <div className="mt-9 flex flex-wrap gap-3">
+            <div className="mx-auto mt-8 grid max-w-sm gap-3 sm:flex sm:max-w-none sm:justify-center lg:justify-start">
               <Button size="lg" variant="hero" nativeButton={false} render={<Link href="/#mine" />}>
                 Wake my Chog →
               </Button>
@@ -56,21 +58,21 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Floating card stack */}
-          <div className="relative mx-auto h-[420px] w-full max-w-[420px] sm:h-[480px]">
+          {/* Floating card stack: sized by its own width so it never spills off-screen. */}
+          <div className="relative mx-auto aspect-[1/0.8] w-full max-w-[min(100%,420px)] sm:max-w-[440px]">
             {hero.map((c, i) => (
               <div
                 key={c.tokenId}
                 className={
                   [
-                    "absolute top-10 left-0 w-[58%] -rotate-[9deg] [animation-delay:-2s]",
-                    "absolute top-0 left-[21%] z-10 w-[62%] [animation-delay:0s]",
-                    "absolute top-16 right-0 w-[56%] rotate-[8deg] [animation-delay:-4s]",
+                    "absolute top-[12%] left-[3%] w-[48%] -rotate-[9deg]",
+                    "absolute top-0 left-[22%] z-10 w-[56%]",
+                    "absolute top-[16%] right-[3%] w-[46%] rotate-[8deg]",
                   ][i]
                 }
               >
                 <div className="animate-float" style={{ animationDelay: `${-i * 2.3}s` }}>
-                  <ChogCard chog={c} href={`/chog/${c.tokenId}`} className="animate-rise" />
+                  <ChogCard chog={c} href={`/chog/${c.tokenId}`} bare={i !== 1} className="animate-rise" />
                 </div>
               </div>
             ))}

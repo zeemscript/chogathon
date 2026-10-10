@@ -42,16 +42,33 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
   const soul = buildPersonality(chog.traits);
   const traits = Object.entries(chog.traits).filter(([, v]) => v && v !== "None");
 
+  // Name + tier + owner. Shown first on phones, beside the portrait on desktop.
+  const identity = (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="label-mono rounded-full border border-line-bright bg-chog/12 px-3 py-1 text-chog-soft">
+          {chog.traits.Tier ?? "Chog"}
+        </span>
+        <OwnerBadge owner={owner} />
+      </div>
+      <h1 className="font-display text-[clamp(56px,9vw,120px)] leading-[0.82]">
+        Chog <span className="text-gradient">#{chog.tokenId}</span>
+      </h1>
+    </div>
+  );
+
   return (
     <div className="space-y-8">
-      <Link href="/#meet" className="label-mono text-muted-foreground transition-colors hover:text-foreground">
+      <Link href="/#meet" className="label-mono relative z-10 inline-block text-muted-foreground transition-colors hover:text-foreground">
         ← All Chogs
       </Link>
 
-      <div className="grid items-start gap-10 lg:grid-cols-[400px_1fr]">
+      <div className="lg:hidden">{identity}</div>
+
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-10 lg:grid-cols-[400px_minmax(0,1fr)]">
         {/* Left: portrait + soul */}
         <aside className="space-y-6 lg:sticky lg:top-24">
-          <div className="animate-float">
+          <div className="mx-auto max-w-[320px] animate-float lg:max-w-none">
             <div className="animate-rise overflow-hidden rounded-2xl border border-line-bright bg-night-3 shadow-[0_52px_90px_-34px_rgba(0,0,0,.95),0_20px_46px_-16px_rgba(131,110,249,.6),inset_0_1px_0_rgba(255,255,255,.22)]">
               {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway image */}
               <img src={chog.image} alt={chog.name} className="aspect-square w-full object-cover" />
@@ -96,17 +113,7 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
 
         {/* Right: identity, chat, traits */}
         <div className="min-w-0 space-y-8">
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="label-mono rounded-full border border-line-bright bg-chog/12 px-3 py-1 text-chog-soft">
-                {chog.traits.Tier ?? "Chog"}
-              </span>
-              <OwnerBadge owner={owner} />
-            </div>
-            <h1 className="font-display text-[clamp(64px,9vw,120px)] leading-[0.82]">
-              Chog <span className="text-gradient">#{chog.tokenId}</span>
-            </h1>
-          </div>
+          <div className="hidden lg:block">{identity}</div>
 
           <AuraPanel tokenId={tokenId} owner={owner} />
 

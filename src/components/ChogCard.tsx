@@ -9,7 +9,18 @@ const TIER_STYLE: Record<string, string> = {
   Rare: "bg-chog-cyan/15 text-cyan-300 border-chog-cyan/40",
 };
 
-export default function ChogCard({ chog, href, className }: { chog: Chog; href?: string; className?: string }) {
+// `bare` shows just the art + tier (used for the back cards in the hero stack).
+export default function ChogCard({
+  chog,
+  href,
+  className,
+  bare = false,
+}: {
+  chog: Chog;
+  href?: string;
+  className?: string;
+  bare?: boolean;
+}) {
   const soul = buildPersonality(chog.traits);
   const tier = chog.traits.Tier;
   const card = (
@@ -27,7 +38,7 @@ export default function ChogCard({ chog, href, className }: { chog: Chog; href?:
           loading="lazy"
           className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
         />
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-card via-card/40 to-transparent" />
+        {!bare && <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-card via-card/40 to-transparent" />}
         {tier && tier !== "Common" && (
           <span
             className={cn(
@@ -39,7 +50,7 @@ export default function ChogCard({ chog, href, className }: { chog: Chog; href?:
           </span>
         )}
       </div>
-      <div className="relative -mt-8 space-y-1 px-4 pb-4">
+      <div className={cn("relative -mt-8 space-y-1 px-4 pb-4", bare && "hidden")}>
         <h3 className="font-display text-2xl">{chog.name}</h3>
         <p className="label-mono truncate text-[10.5px] text-chog-soft">{soul.archetype}</p>
       </div>
