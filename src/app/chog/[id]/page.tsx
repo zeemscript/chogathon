@@ -1,9 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import AuraPanel from "@/components/AuraPanel";
 import ChatPanel from "@/components/ChatPanel";
 import OwnerBadge from "@/components/OwnerBadge";
+import SoulCardShare from "@/components/SoulCardShare";
 import Relations from "@/components/Relations";
 import TownFeed from "@/components/TownFeed";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,6 +13,21 @@ import { getChog, parseTokenId } from "@/lib/chogs";
 import { getOwner } from "@/lib/owners";
 import { buildPersonality } from "@/lib/personality";
 import { getRelations } from "@/lib/town";
+
+export async function generateMetadata({ params }: PageProps<"/chog/[id]">): Promise<Metadata> {
+  const tokenId = parseTokenId((await params).id);
+  const chog = tokenId ? getChog(tokenId) : undefined;
+  if (!chog) return { title: "Chog Souls" };
+  const soul = buildPersonality(chog.traits);
+  const title = `${chog.name}, ${soul.archetype} · Chog Souls`;
+  const description = `A ${soul.temperament.join(", ")} Chog with a soul. It remembers every owner, every rival, every secret.`;
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: "profile" },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
 
 export default function ChogPage({ params }: PageProps<"/chog/[id]">) {
   return (
@@ -118,6 +135,8 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
           <AuraPanel tokenId={tokenId} owner={owner} />
 
           <ChatPanel tokenId={tokenId} name={chog.name} owner={owner} />
+
+          <SoulCardShare tokenId={tokenId} />
 
           <section className="space-y-4">
             <p className="label-mono text-chog-soft">✦ Friends &amp; rivals</p>

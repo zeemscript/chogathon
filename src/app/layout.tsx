@@ -10,7 +10,17 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" });
 const koulen = Koulen({ subsets: ["latin"], weight: "400", variable: "--font-koulen" });
 
+// Absolute base for share images: custom domain, else the Vercel URL, else local.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL && process.env.VERCEL_ENV === "production"
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3005");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Chog Souls",
   description: "Every Chog has a soul. Its memories, friends and grudges travel with the NFT.",
 };

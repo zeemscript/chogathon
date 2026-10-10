@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
+  // Soul Card fonts are read from disk at runtime, so make sure they ship.
+  outputFileTracingIncludes: {
+    "/api/card/*": ["src/assets/fonts/**/*"],
+    "/chog/*": ["src/assets/fonts/**/*"],
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {
