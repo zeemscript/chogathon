@@ -129,6 +129,7 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
               <img src={chog.image} alt={chog.name} className="aspect-square w-full rounded-[19px] object-cover" />
             </div>
             {notes}
+            <MarketStrip tokenId={tokenId} />
           </div>
 
           {/* identity + soul + aura */}
@@ -139,8 +140,8 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
                 {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway image */}
                 <img src={chog.image} alt={chog.name} className="aspect-square w-full rounded-[16px] object-cover" />
               </div>
-              <div className="min-w-0 space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="label-mono rounded-full border border-line-bright bg-chog/15 px-2.5 py-0.5 text-[10.5px] text-chog-soft">{tier}</span>
                   <OwnerBadge owner={owner} />
                 </div>
@@ -164,9 +165,11 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
                 </span>
               ))}
             </div>
-            <MarketStrip tokenId={tokenId} />
             {/* phones/tablets: notes stay beside the identity */}
-            <div className="lg:hidden">{notes}</div>
+            <div className="space-y-3 lg:hidden">
+              {notes}
+              <MarketStrip tokenId={tokenId} />
+            </div>
             <AuraPanel tokenId={tokenId} owner={owner} />
           </div>
         </div>

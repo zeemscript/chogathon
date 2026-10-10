@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Koulen } from "next/font/google";
 import { cn } from "@/lib/utils";
 import Header from "@/components/Header";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Providers from "./providers";
 import "./globals.css";
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <TooltipProvider>
             <Header />
             <main className="w-full min-w-0 flex-1">{children}</main>
+            <Toaster />
           </TooltipProvider>
         </Providers>
       </body>

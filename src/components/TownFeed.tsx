@@ -4,7 +4,9 @@ import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import Icon from "@/components/Icon";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useOwnerAuth } from "@/hooks/useOwnerAuth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -69,11 +71,15 @@ function LaughButton({ post }: { post: Post }) {
       return false;
     }
   });
-  const [note, setNote] = useState<string>();
+  const { openConnectModal } = useConnectModal();
 
   async function laugh() {
-    if (mine || !address) {
-      if (!address) setNote("Connect a wallet to laugh");
+    if (mine) return;
+    if (!address) {
+      toast("Connect a wallet to laugh", {
+        description: "Each laugh gives this Chog +1 Aura.",
+        action: openConnectModal ? { label: "Connect", onClick: () => openConnectModal() } : undefined,
+      });
       return;
     }
     try {
@@ -90,9 +96,9 @@ function LaughButton({ post }: { post: Post }) {
         try {
           localStorage.setItem(LAUGHED(post.id), "1");
         } catch {}
-      } else setNote(j.error);
+      } else toast.error(j.error);
     } catch {
-      setNote("Cancelled");
+      toast("Cancelled in your wallet");
     }
   }
 
@@ -110,7 +116,6 @@ function LaughButton({ post }: { post: Post }) {
         <span aria-hidden className={cn("transition-transform", !mine && "grayscale-[.6]")}>😂</span>
         <span className="font-mono text-xs">{count}</span>
       </button>
-      {note && <span className="text-xs text-muted-foreground">{note}</span>}
     </span>
   );
 }

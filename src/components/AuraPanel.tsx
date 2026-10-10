@@ -1,13 +1,15 @@
 "use client";
 
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { parseUnits } from "viem";
+import { toast } from "sonner";
 import { useWriteContract } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { useOwnerAuth } from "@/hooks/useOwnerAuth";
 import { CHOG_TOKEN } from "@/lib/chain";
-import { BubbleChatIcon, Coins01Icon, FireIcon, Sun03Icon } from "@hugeicons/core-free-icons";
+import { Coins01Icon, FireIcon, Sun03Icon } from "@hugeicons/core-free-icons";
 import Icon from "@/components/Icon";
 import { TIER_STYLE } from "@/lib/tiers";
 import { cn } from "@/lib/utils";
@@ -71,7 +73,15 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
   const { address, isOwner, auth, signIn, signing } = useOwnerAuth(owner);
   const { writeContractAsync } = useWriteContract();
   const [busy, setBusy] = useState<string>();
-  const [flash, setFlash] = useState<string>();
+  const { openConnectModal } = useConnectModal();
+
+  // No wallet yet? Ask for one in a toast instead of cluttering the card.
+  function needWallet(why: string) {
+    toast("Connect a wallet first", {
+      description: why,
+      action: openConnectModal ? { label: "Connect", onClick: () => openConnectModal() } : undefined,
+    });
+  }
 
   const { data: aura } = useQuery({
     queryKey: ["aura", tokenId],
@@ -81,7 +91,6 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
 
   async function care() {
     setBusy("care");
-    setFlash(undefined);
     try {
       const a = auth ?? (await signIn());
       const res = await fetch("/api/care", {
@@ -91,22 +100,22 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error);
-      setFlash(
-        j.alreadyToday
-          ? "Already checked in today. It noticed."
-          : `+${j.granted} Aura · day ${j.streak} in a row${j.multiplier > 1 ? ` (×${j.multiplier} streak bonus)` : ""}`,
-      );
+      if (j.alreadyToday) toast("Already checked in today", { description: "It noticed. Come back tomorrow to keep the streak." });
+      else
+        toast.success(`+${j.granted} Aura · it missed you`, {
+          description: `Day ${j.streak} in a row${j.multiplier > 1 ? ` · ×${j.multiplier} streak bonus` : ""}`,
+        });
       qc.setQueryData(["aura", tokenId], j.aura);
     } catch (err) {
-      setFlash(friendly(err, "Couldn't check in"));
+      toast.error(friendly(err, "Couldn't check in"));
     } finally {
       setBusy(undefined);
     }
   }
 
   async function hype() {
+    if (!address) return needWallet("Hyping gives this Chog +3 Aura, once a day.");
     setBusy("hype");
-    setFlash(undefined);
     try {
       const a = auth ?? (await signIn());
       const res = await fetch("/api/hype", {
@@ -116,10 +125,11 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error);
-      setFlash(j.alreadyToday ? "You already hyped it today. Come back tomorrow." : `+${j.granted} Aura · hyped! ${j.hypesLeft} hypes left today`);
+      if (j.alreadyToday) toast("You already hyped it today", { description: "Come back tomorrow." });
+      else toast.success(`+${j.granted} Aura · hyped!`, { description: `${j.hypesLeft} hypes left today` });
       qc.setQueryData(["aura", tokenId], j.aura);
     } catch (err) {
-      setFlash(friendly(err, "Couldn't hype"));
+      toast.error(friendly(err, "Couldn't hype"));
     } finally {
       setBusy(undefined);
     }
@@ -127,8 +137,9 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
 
   async function feed(amount: number) {
     if (!TREASURY) return;
+    if (!address) return needWallet(`Feeding sends ${amount} $CHOG and grows its Aura.`);
     setBusy(`feed${amount}`);
-    setFlash(undefined);
+    const t = toast.loading(`Feeding ${amount} $CHOG…`, { description: "Confirm in your wallet" });
     try {
       const txHash = await writeContractAsync({
         address: CHOG_TOKEN,
@@ -136,7 +147,7 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
         functionName: "transfer",
         args: [TREASURY, parseUnits(String(amount), 18)],
       });
-      setFlash("Feeding… waiting for Monad");
+      toast.loading(`Feeding ${amount} $CHOG…`, { id: t, description: "Waiting for Monad" });
       const res = await fetch("/api/feed", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -144,10 +155,10 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error);
-      setFlash(`Nom. +${j.points} Aura from ${j.amount} $CHOG`);
+      toast.success(`Nom. +${j.points} Aura`, { id: t, description: `${j.amount} $CHOG fed` });
       qc.setQueryData(["aura", tokenId], j.aura);
     } catch (err) {
-      setFlash(friendly(err, "Feeding failed"));
+      toast.error(friendly(err, "Feeding failed"), { id: t, description: undefined });
     } finally {
       setBusy(undefined);
     }
@@ -224,14 +235,10 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
           </Button>
         ) : (
           <>
-            <Button size="sm" onClick={hype} disabled={!!busy || signing || !address}>
+            <Button size="sm" onClick={hype} disabled={!!busy || signing}>
               <Icon icon={FireIcon} size={14} />
               {busy === "hype" || signing ? "…" : "Hype"}
             </Button>
-            <span className="mr-auto hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-              <Icon icon={BubbleChatIcon} size={14} className="text-chog-soft" />
-              {address ? "+3 Aura, once a day" : "Connect a wallet to hype"}
-            </span>
           </>
         )}
         {TREASURY ? (
@@ -254,7 +261,6 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
         ) : (
           <span className="label-mono ml-auto text-[10px] text-muted-foreground/60">$CHOG feeding opens soon</span>
         )}
-        {flash && <p className="w-full pt-1 text-sm text-chog-soft">{flash}</p>}
       </div>
     </section>
   );
