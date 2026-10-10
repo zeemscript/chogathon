@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import ChatPanel from "@/components/ChatPanel";
 import OwnerBadge from "@/components/OwnerBadge";
 import { getChog, parseTokenId } from "@/lib/chogs";
 import { getOwner } from "@/lib/owners";
@@ -54,9 +55,7 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
               </div>
             ))}
           </dl>
-          <div className="rounded-2xl border border-dashed border-white/15 p-6 text-zinc-400">
-            This Chog&apos;s soul is still waking up. Chat arrives soon.
-          </div>
+          <ChatPanel tokenId={tokenId} name={chog.name} owner={owner} />
         </div>
       </div>
     </div>
