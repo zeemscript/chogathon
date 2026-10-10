@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: PageProps<"/chog/[id]">): Pro
 
 export default function ChogPage({ params }: PageProps<"/chog/[id]">) {
   return (
-    <div className="mx-auto max-w-6xl px-4 pt-24 pb-24 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 pt-20 pb-24 sm:px-6">
       <Suspense fallback={<ChogSkeleton />}>
         <ChogView params={params} />
       </Suspense>
@@ -71,7 +71,7 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
   const tier = chog.traits.Tier ?? "Chog";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Link href="/#meet" className="label-mono relative z-10 inline-block text-muted-foreground transition-colors hover:text-foreground">
         <span className="inline-flex items-center gap-1.5"><Icon icon={ArrowLeft01Icon} size={14} />All Chogs</span>
       </Link>
@@ -83,16 +83,14 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
         <img src={chog.image} alt="" aria-hidden className="absolute inset-0 size-full scale-125 object-cover opacity-30 blur-3xl saturate-150" />
         <div className="absolute inset-0 bg-gradient-to-b from-night/40 via-card/85 to-card" />
 
-        <div className="relative grid gap-8 p-5 sm:p-8 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-10">
-          {/* portrait */}
-          <div className="mx-auto w-full max-w-[280px] lg:max-w-none">
+        <div className="relative grid gap-5 p-4 sm:p-6 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-8">
+          {/* portrait (desktop) */}
+          <div className="hidden lg:block">
             <div className="animate-float">
-              <div
-                className={cn(
-                  "animate-rise rounded-[22px] bg-gradient-to-br p-[3px]",
+              <div className={cn(
+                  "rounded-[22px] bg-gradient-to-br p-[3px]",
                   RARITY_RING[tier] ?? "from-chog-soft to-chog-deep shadow-[0_0_50px_rgba(131,110,249,.35)]",
-                )}
-              >
+                )}>
                 {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway image */}
                 <img src={chog.image} alt={chog.name} className="aspect-square w-full rounded-[19px] object-cover" />
               </div>
@@ -100,46 +98,50 @@ async function ChogView({ params }: { params: PageProps<"/chog/[id]">["params"] 
           </div>
 
           {/* identity + soul + aura */}
-          <div className="min-w-0 space-y-5">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="label-mono rounded-full border border-line-bright bg-chog/15 px-3 py-1 text-chog-soft">{tier}</span>
-              <OwnerBadge owner={owner} />
-            </div>
-            <div>
-              <h1 className="font-display text-[clamp(56px,9vw,112px)] leading-[0.82]">
-                Chog <span className="text-gradient">#{chog.tokenId}</span>
-              </h1>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="mr-1 font-display text-2xl sm:text-3xl">{soul.archetype}</span>
-                {soul.temperament.map((t, i) => (
-                  <span
-                    key={t}
-                    className={
-                      i === 0
-                        ? "label-mono animate-chip-pulse rounded-full border border-white/40 bg-[linear-gradient(135deg,#836ef9,#a855f7)] px-3 py-1.5 text-[10.5px] text-white"
-                        : "label-mono rounded-full border border-line-bright bg-white/[.04] px-3 py-1.5 text-[10.5px] text-chog-soft"
-                    }
-                  >
-                    {t}
-                  </span>
-                ))}
+          <div className="min-w-0 space-y-4">
+            <div className="flex items-center gap-4">
+              {/* portrait (phones/tablets): small, beside the name */}
+              <div className={cn("w-24 shrink-0 sm:w-28 lg:hidden", "rounded-[18px] bg-gradient-to-br p-[2px]", RARITY_RING[tier] ?? "from-chog-soft to-chog-deep")}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- IPFS gateway image */}
+                <img src={chog.image} alt={chog.name} className="aspect-square w-full rounded-[16px] object-cover" />
+              </div>
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="label-mono rounded-full border border-line-bright bg-chog/15 px-2.5 py-0.5 text-[10.5px] text-chog-soft">{tier}</span>
+                  <OwnerBadge owner={owner} />
+                </div>
+                <h1 className="font-display text-[clamp(44px,8vw,92px)] leading-[0.82]">
+                  Chog <span className="text-gradient">#{chog.tokenId}</span>
+                </h1>
               </div>
             </div>
-            <ul className="grid gap-x-6 gap-y-1.5 text-sm text-muted-foreground sm:grid-cols-2">
-              {soul.quirks.map((q) => (
-                <li key={q} className="flex gap-2">
-                  <Icon icon={SparklesIcon} size={15} className="mt-0.5 text-chog-soft" />
-                  {q}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mr-1 font-display text-2xl">{soul.archetype}</span>
+              {soul.temperament.map((t, i) => (
+                <span
+                  key={t}
+                  className={
+                    i === 0
+                      ? "label-mono animate-chip-pulse rounded-full border border-white/40 bg-[linear-gradient(135deg,#836ef9,#a855f7)] px-2.5 py-1 text-[10px] text-white"
+                      : "label-mono rounded-full border border-line-bright bg-white/[.04] px-2.5 py-1 text-[10px] text-chog-soft"
+                  }
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+            <ul className="grid gap-x-6 gap-y-1 text-sm text-muted-foreground sm:grid-cols-2">
+              {[
+                ...soul.quirks.map((q) => ({ text: q, icon: SparklesIcon, cls: "text-chog-soft" })),
+                { text: `loves ${soul.likes.join(" and ")}`, icon: FavouriteIcon, cls: "text-chog-pink" },
+                { text: `can't stand ${soul.dislikes.join(", ")}`, icon: HeartbreakIcon, cls: "text-chog-gold" },
+              ].map((q, i) => (
+                // phones show the first two; the rest from sm up
+                <li key={q.text} className={cn("flex gap-2", i >= 2 && "hidden sm:flex")}>
+                  <Icon icon={q.icon} size={15} className={cn("mt-0.5", q.cls)} />
+                  <span className="min-w-0">{q.text}</span>
                 </li>
               ))}
-              <li className="flex gap-2">
-                <Icon icon={FavouriteIcon} size={15} className="mt-0.5 text-chog-pink" />
-                loves {soul.likes.join(" and ")}
-              </li>
-              <li className="flex gap-2">
-                <Icon icon={HeartbreakIcon} size={15} className="mt-0.5 text-chog-gold" />
-                can&apos;t stand {soul.dislikes.join(", ")}
-              </li>
             </ul>
             <AuraPanel tokenId={tokenId} owner={owner} />
           </div>

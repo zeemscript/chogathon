@@ -16,8 +16,8 @@ export default function OwnerBadge({ owner }: { owner?: string }) {
     );
   }
   return (
-    <span className="label-mono inline-flex items-center gap-2 text-muted-foreground">
-      Held by
+    <span className="label-mono inline-flex items-center gap-2 whitespace-nowrap text-muted-foreground">
+      <span className="hidden sm:inline">Held by</span>
       <a
         href={`https://monadscan.com/address/${owner}`}
         target="_blank"
