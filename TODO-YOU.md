@@ -3,7 +3,7 @@
 Your checklist. Each item says why it matters and exactly what to do.
 Tick items off as you go (`[ ]` → `[x]`). Never put private keys or seed phrases here.
 
-Last updated: 2026-10-10
+Last updated: 2026-10-12
 
 ## Blocking features
 
@@ -13,10 +13,6 @@ Last updated: 2026-10-10
 
 - [ ] **Test $CHOG feeding once** (treasury is set ✓). You need a little $CHOG + MON for gas.
       Open any Chog page and press Feed 100. No feeds recorded yet.
-
-- [ ] **Run migration `0004_chog_economy.sql`** in the Supabase SQL Editor
-      (https://supabase.com/dashboard/project/kvmhlxrtfpqhzjozctnm/sql/new → paste → Run).
-      Needed for the 80/20 feed split, paid chat packs and commissioned roasts.
 
 ## Testing
 
@@ -42,7 +38,7 @@ Last updated: 2026-10-10
 ## Done
 
 - [x] Supabase project created
-- [x] Migrations `0001_init.sql`, `0002_aura.sql`, `0003_boost_roast_market.sql` run
+- [x] Migrations `0001_init.sql`, `0002_aura.sql`, `0003_boost_roast_market.sql`, `0004_chog_economy.sql` run
 - [x] `SUPABASE_SECRET_KEY`, `DEEPSEEK_API_KEY`, `OPENSEA_API_KEY` added to `.env.local`
 - [x] Treasury wallet set (`NEXT_PUBLIC_CHOG_TREASURY`)
 - [x] WalletConnect (Reown) project ID added locally and on Vercel

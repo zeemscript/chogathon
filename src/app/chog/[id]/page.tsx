@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getChog, parseTokenId } from "@/lib/chogs";
 import { getOwner } from "@/lib/owners";
 import { buildPersonality } from "@/lib/personality";
+import { parseCardStyle } from "@/lib/soul-card";
 import { getRelations } from "@/lib/town";
 import { cn } from "@/lib/utils";
 
@@ -27,18 +28,21 @@ const RARITY_RING: Record<string, string> = {
   Rare: "from-cyan-300 to-chog-cyan shadow-[0_0_60px_rgba(34,211,238,.35)]",
 };
 
-export async function generateMetadata({ params }: PageProps<"/chog/[id]">): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps<"/chog/[id]">): Promise<Metadata> {
   const tokenId = parseTokenId((await params).id);
   const chog = tokenId ? getChog(tokenId) : undefined;
   if (!chog) return { title: "Chog Souls" };
   const soul = buildPersonality(chog.traits);
   const title = `${chog.name}, ${soul.archetype} · Chog Souls`;
   const description = `A ${soul.temperament.join(", ")} Chog with a soul. It remembers every owner, every rival, every secret.`;
+  // Shared links carry the holder's chosen card style: /chog/1432?card=poster
+  const style = parseCardStyle(String((await searchParams).card ?? ""));
+  const images = [{ url: `/api/card/${tokenId}?style=${style}&og=1`, width: 1200, height: 630, alt: `Soul Card for ${chog.name}` }];
   return {
     title,
     description,
-    openGraph: { title, description, type: "profile" },
-    twitter: { card: "summary_large_image", title, description },
+    openGraph: { title, description, type: "profile", images },
+    twitter: { card: "summary_large_image", title, description, images },
   };
 }
 

@@ -1,7 +1,7 @@
 import "server-only";
 import { ImageResponse } from "next/og";
 import { SOUL_FLAME_DATA_URL } from "./logo-svg";
-import { artBackdrop, artDataUrl, cardFonts, CARD_SIZE } from "./soul-card";
+import { artDataUrl, cardFonts, CARD_SIZE, renderPostCard } from "./soul-card";
 
 // Brand images: favicon/app icon and the share (Open Graph) images for the
 // home page, Town Square and Aura ranks. Satori: flexbox only, inline styles.
@@ -197,71 +197,5 @@ export async function renderAuraOg(top: { tokenId: number; score: number; tier: 
   );
 }
 
-// One Square post as a share image: the author's art as the backdrop, the
-// roast in huge type, and the Chog it's about.
-export async function renderPostOg(post: { tokenId: number; aboutId?: number | null; content: string; kind: string; archetype: string }) {
-  const [fonts, bg, author, about] = await Promise.all([
-    cardFonts,
-    artBackdrop(post.tokenId),
-    artDataUrl(post.tokenId, 170),
-    post.aboutId ? artDataUrl(post.aboutId, 84) : undefined,
-  ]);
-  const roast = post.kind === "roast";
-  const accent = roast ? "#fb923c" : "#a99bfc";
-  const text = post.content.length > 150 ? `${post.content.slice(0, 147)}…` : post.content;
-  const size = text.length > 100 ? 46 : text.length > 60 ? 56 : 66;
-  return new ImageResponse(
-    (
-      <div style={{ width: "100%", height: "100%", display: "flex", position: "relative", overflow: "hidden", background: NIGHT, fontFamily: "Inter", color: "#fff" }}>
-        {bg && (
-          // eslint-disable-next-line @next/next/no-img-element -- rendered by Satori
-          <img src={bg} width={1200} height={630} style={{ position: "absolute", inset: 0, width: 1200, height: 630 }} alt="" />
-        )}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(8,5,18,.55) 0%, rgba(8,5,18,.82) 100%)" }} />
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "52px 64px", width: "100%", position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-              {author && (
-                // eslint-disable-next-line @next/next/no-img-element -- rendered by Satori
-                <img src={author} width={96} height={96} style={{ borderRadius: 24, border: `3px solid ${accent}`, boxShadow: `0 0 40px ${accent}88` }} alt="" />
-              )}
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <div style={{ fontFamily: "Koulen", fontSize: 52, lineHeight: 0.95 }}>{`Chog #${post.tokenId}`}</div>
-                <div style={{ ...mono, fontSize: 15, color: "rgba(255,255,255,.7)", marginTop: 4 }}>{post.archetype}</div>
-              </div>
-            </div>
-            <div style={{ ...mono, display: "flex", padding: "10px 20px", borderRadius: 999, fontSize: 18, color: roast ? "#1a0b00" : "#fff", background: roast ? "#fb923c" : "rgba(131,110,249,.5)" }}>
-              {roast ? "Roast 🔥" : post.kind}
-            </div>
-          </div>
-
-          <div style={{ display: "flex", fontSize: size, lineHeight: 1.18, fontWeight: 600, letterSpacing: -0.5, textShadow: "0 4px 24px rgba(0,0,0,.6)" }}>
-            {`“${text}”`}
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              {about && (
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ ...mono, fontSize: 14, color: "rgba(255,255,255,.65)" }}>{roast ? "Victim" : "About"}</div>
-                  {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori */}
-                  <img src={about} width={52} height={52} style={{ borderRadius: 14, border: "2px solid rgba(255,255,255,.5)" }} alt="" />
-                  <div style={{ fontFamily: "Koulen", fontSize: 32 }}>{`#${post.aboutId}`}</div>
-                </div>
-              )}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori */}
-              <img src={SOUL_FLAME_DATA_URL} width={40} height={41} alt="" />
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <div style={{ fontFamily: "Koulen", fontSize: 30, lineHeight: 1 }}>Chog Souls Town Square</div>
-                <div style={{ ...mono, fontSize: 12, color: "rgba(255,255,255,.65)" }}>chog-souls.vercel.app</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    ),
-    { ...CARD_SIZE, fonts },
-  );
-}
+// One Square post as a share image: the Soul Card "Poster" look, 1200x630.
+export const renderPostOg = renderPostCard;

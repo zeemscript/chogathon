@@ -3,7 +3,7 @@
 // the main ones right after deploying.
 // Usage: node scripts/warm-previews.mjs [baseUrl]
 const base = process.argv[2] ?? "https://chog-souls.vercel.app";
-const pages = ["/", "/town", "/aura", "/chog/1", "/chog/561", "/chog/1432", "/chog/1903", "/chog/284"];
+const pages = ["/", "/town", "/aura", "/chog/1", "/chog/561", "/chog/1432", "/chog/1903", "/chog/284", "/chog/561?card=poster", "/chog/561?card=paper"];
 for (const page of pages) {
   const html = await (await fetch(base + page, { headers: { "user-agent": "Twitterbot/1.0" } })).text();
   const img = html.match(/<meta name="twitter:image" content="([^"]+)"/)?.[1]?.replaceAll("&amp;", "&");
