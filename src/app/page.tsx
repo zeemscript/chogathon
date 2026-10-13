@@ -177,7 +177,7 @@ export default function Home() {
       <footer className="border-t border-border py-10">
         <div className="label-mono mx-auto flex max-w-6xl flex-wrap justify-between gap-4 px-4 text-muted-foreground sm:px-6">
           <span>
-            Chog Souls · built for Chogathon 2026 · a community project, not affiliated with Chog · Art from{" "}
+            Chog Souls · built for Chogathon 2026 · Art from{" "}
             <a href="https://chog.xyz" target="_blank" rel="noreferrer" className="text-chog-soft hover:underline">
               Chog Genesis
             </a>
