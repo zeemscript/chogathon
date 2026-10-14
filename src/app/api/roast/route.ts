@@ -1,8 +1,8 @@
 import { parseTokenId } from "@/lib/chogs";
 import { getOwner } from "@/lib/owners";
-import { claimPayments, PRICES, readPayments, treasury } from "@/lib/payments";
+import { claimPayments, PRICES, readPayments, releasePayments, treasury } from "@/lib/payments";
 import { resolveSpeaker, type AuthPayload } from "@/lib/speaker";
-import { createPost } from "@/lib/town";
+import { AiUnavailable, createPost } from "@/lib/town";
 
 // POST /api/roast { fromTokenId, targetTokenId, txHash, auth }
 // Commission a roast: your Chog publicly roasts another Chog in the Square.
@@ -30,9 +30,19 @@ export async function POST(request: Request) {
     if ((paid.to.get(vault) ?? 0) < PRICES.roast) {
       return Response.json({ error: `A roast costs ${PRICES.roast} $CHOG` }, { status: 400 });
     }
+    // Claim first so the same payment can't buy two roasts at once; if the AI
+    // can't write it, release the claim so this payment works on retry.
     await claimPayments([body.txHash], { from: paid.from, purpose: "roast", amount: paid.to.get(vault)!, tokenId: from });
-    const post = await createPost(from, target, "roast", { commissioned_by: paid.from });
-    return Response.json({ post });
+    try {
+      const post = await createPost(from, target, "roast", { commissioned_by: paid.from });
+      return Response.json({ post });
+    } catch (err) {
+      await releasePayments([body.txHash]);
+      if (err instanceof AiUnavailable) {
+        return Response.json({ error: `${err.message} Your payment is safe: retry and it will be used.` }, { status: 503 });
+      }
+      throw err;
+    }
   } catch (err) {
     return Response.json({ error: err instanceof Error ? err.message : "Roast failed" }, { status: 400 });
   }

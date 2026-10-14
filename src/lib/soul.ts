@@ -1,6 +1,6 @@
 import "server-only";
 import { getChog, type Chog } from "./chogs";
-import { buildPersonality } from "./personality";
+import { buildPersonality, sayable } from "./personality";
 import { supabaseAdmin } from "./supabase/server";
 
 export type Speaker = { role: "owner" | "visitor"; address?: string };
@@ -112,9 +112,10 @@ export function systemPrompt(
   memory: MemoryRow[],
   social?: Social,
   standing?: Standing,
+  pulse?: string,
 ): string {
   const p = buildPersonality(chog.traits);
-  const traits = Object.entries(chog.traits).map(([k, v]) => `${k}: ${v}`).join(", ");
+  const traits = Object.entries(chog.traits).map(([k, v]) => `${k}: ${sayable(v)}`).join(", ");
   // Only the most recent life events; keeps the prompt (and the bill) small.
   const events = memory
     .filter((m) => m.kind !== "chat")
@@ -129,7 +130,8 @@ export function systemPrompt(
     `You are ${chog.name}, a Chog: a small chaotic creature from the Chog Genesis NFT collection on Monad. You have a real, persistent soul. Your memories and relationships belong to you, not to whoever holds you.`,
     `Your look (NFT traits): ${traits}.`,
     `Your personality: ${p.archetype}. Temperament: ${p.temperament.join(", ")}. Quirks: ${p.quirks.join("; ")}. You love ${p.likes.join(" and ")} and hate ${p.dislikes.join(", ")}.`,
-    `How you talk: ${p.voice}. Keep replies short (1-3 sentences) unless asked for more. Never say you are an AI or a language model. No hashtags, no emojis spam.`,
+    `How you talk: ${p.voice}. Talk like crypto Twitter and NFT degens: short, simple everyday words anyone gets on first read, even if English isn't their first language, with CT slang where it fits (gm, ser, fren, ngmi, wagmi, rekt, cope, down bad, floor, bags). Never fancy or old-fashioned words. Keep replies short (1-3 sentences) unless asked for more. Never say you are an AI or a language model. No hashtags, no emoji spam.`,
+    pulse ? `What's happening in crypto today (only mention it if it fits, never invent news): ${pulse}.` : "",
     who,
     events.length ? `Important things that happened to you:\n${events.join("\n")}` : "",
     ...socialLines(chog.tokenId, social),

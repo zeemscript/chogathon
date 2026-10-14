@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { townTick } from "@/lib/town";
+import { AiUnavailable, townTick } from "@/lib/town";
 
 // POST /api/town/tick -> force posts. For cron jobs and seeding the Square.
 // GET is the same thing; Vercel Cron calls GET with the CRON_SECRET bearer.
@@ -11,7 +11,13 @@ export async function POST(request: NextRequest) {
   }
   const count = Math.min(10, Math.max(1, Number(request.nextUrl.searchParams.get("count")) || 1));
   const posts = [];
-  for (let i = 0; i < count; i++) posts.push(...(await townTick()));
+  try {
+    for (let i = 0; i < count; i++) posts.push(...(await townTick()));
+  } catch (err) {
+    // No AI, no post: the Square never falls back to canned lines.
+    if (!(err instanceof AiUnavailable)) throw err;
+    return Response.json({ posts, skipped: count - posts.length, error: err.message }, { status: 503 });
+  }
   return Response.json({ posts });
 }
 

@@ -1,7 +1,7 @@
 import { getOwner } from "@/lib/owners";
 import { resolveSpeaker, type AuthPayload } from "@/lib/speaker";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { createPost, getPost } from "@/lib/town";
+import { AiUnavailable, createPost, getPost } from "@/lib/town";
 
 // POST /api/roast/comeback { postId, auth } -> the roasted Chog's owner fires
 // back once, for free. Keeps paid roasts fun instead of bullying.
@@ -23,6 +23,13 @@ export async function POST(request: Request) {
     .select("id");
   if (!claimed?.length) return Response.json({ error: "This roast was already answered" }, { status: 409 });
 
-  const reply = await createPost(post.about_token_id, post.token_id, "roast", { reply_to: post.id });
-  return Response.json({ post: reply });
+  try {
+    const reply = await createPost(post.about_token_id, post.token_id, "roast", { reply_to: post.id });
+    return Response.json({ post: reply });
+  } catch (err) {
+    // Couldn't write it: give the comeback back so the owner can retry.
+    await supabaseAdmin().from("town_posts").update({ comeback_used: false }).eq("id", post.id);
+    const message = err instanceof AiUnavailable ? err.message : "Comeback failed";
+    return Response.json({ error: message }, { status: 503 });
+  }
 }

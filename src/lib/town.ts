@@ -3,7 +3,8 @@ import { CHAT_MODEL, deepseek } from "./ai";
 import { award } from "./aura";
 import { CHOG_SUPPLY } from "./chain";
 import { getChog, type Chog } from "./chogs";
-import { buildPersonality } from "./personality";
+import { buildPersonality, sayable } from "./personality";
+import { marketPulse } from "./pulse";
 import { supabaseAdmin } from "./supabase/server";
 
 // Town Square: Chogs post on their own, gossip about each other, and every
@@ -120,7 +121,7 @@ type Generated = { content: string; kind: Kind; affinity_delta: number; grudge: 
 function looks(c: Chog) {
   return ["Head", "Eyes", "Mouth", "Body", "Accessory", "Background"]
     .filter((k) => c.traits[k] && c.traits[k] !== "None")
-    .map((k) => `${k.toLowerCase()}: ${c.traits[k]}`)
+    .map((k) => `${k.toLowerCase()}: ${sayable(c.traits[k])}`)
     .join(", ");
 }
 
@@ -132,18 +133,35 @@ function describe(c: Chog) {
 // Same text on every call, so DeepSeek's prompt cache bills it at the cheap
 // cached rate. Everything that varies goes in the short user message.
 const SQUARE_SYSTEM =
-  "You write one post for Town Square, a public feed where Chog NFTs (chaotic creatures on Monad) talk about each other. " +
-  "Be genuinely funny: specific, petty, unexpected, like the best replies on crypto Twitter. Max 180 chars. No hashtags. At most one emoji. " +
+  "You write one post for Town Square, a public feed where Chog NFTs (chaotic creatures on Monad) roast and gossip about each other. " +
+  "Write like crypto Twitter and NFT degens talk: short punchy lines, lowercase is fine, simple everyday words anyone gets on first read, even if English isn't their first language. " +
+  "Use at most one bit of CT slang per post, and vary it (gm, ngmi, wagmi, rekt, mid, cope, ser, fren, anon, down bad, cooked, jeet, paper hands, diamond hands, floor, rug, exit liquidity, bags, ratio, based, it's so over, we're so back). Many great posts use none. Never start with 'ser'. " +
+  "Never fancy or old-fashioned words (no thou, thy, alas, darling, chap, indeed). The author's personality changes what it says, never the reading level. " +
+  "Be genuinely funny: specific and petty. Hit the target's actual traits (cap, eyes, outfit, item, background) and tie them to degen life: bags, charts, floor price, gas, airdrops, rugs, jeeting. " +
+  "If the 'today' line gives something real (a price move, a trending coin or NFT), use it when it makes the joke hit harder. Never invent news or prices. " +
+  "Max 160 chars. No hashtags. Most posts use no emoji, never more than one. Never: slurs, real-world hate, 'pick a struggle', 'says a lot'. " +
+  'Tone examples (do not copy): "#1255 gangster suit on a coral pink background. not a vibe ser, that\'s a juice box with a criminal record" ' +
+  '"#808 dead eyes like it\'s been staring at the chart since presale. same fren, same" ' +
+  '"#549 laser eyes and still asleep. that\'s not diamond hands, that\'s a coma" ' +
   "A roast mocks the target's actual traits (cap, eyes, outfit, item, background) in a clever way, never slurs or real-world hate. " +
   'Reply only with JSON: {"content":string,"kind":"post"|"gossip"|"roast","affinity_delta":int -25..25,"grudge":string|null}. ' +
   "affinity_delta = how the post shifts the author's feelings to the target. grudge = short reason if one forms, else null.";
 
-// Skip the AI for a while after it fails (e.g. no credit) instead of paying the
-// timeout on every post.
+// Every post is written by the AI; there are no canned lines. If DeepSeek is
+// down (or out of credit), posting fails with AiUnavailable and callers skip
+// the post or tell the user to retry. After a failure we wait 2 minutes before
+// trying again, instead of paying the timeout on every post.
+export class AiUnavailable extends Error {
+  constructor() {
+    super("The Chogs can't think right now (AI unavailable). Try again in a few minutes.");
+  }
+}
 let aiDownUntil = 0;
 
 async function generateWithAI(author: Chog, target: Chog, rel: Relation | undefined, recent: TownPost[], mode: Kind) {
-  if (Date.now() < aiDownUntil) throw new Error("ai cooling down");
+  if (Date.now() < aiDownUntil) throw new AiUnavailable();
+  // Current events in about a third of posts, so the market never becomes the only joke.
+  const pulse = Math.random() < 0.35 ? await marketPulse() : "";
   const feeling = rel ? `feelings to target: ${rel.affinity}${rel.grudge ? `, grudge: ${rel.grudge}` : ""}` : "first time mentioning target";
   try {
     const res = await deepseek.chat.completions.create({
@@ -156,6 +174,7 @@ async function generateWithAI(author: Chog, target: Chog, rel: Relation | undefi
         {
           role: "user",
           content: [
+            pulse ? `today: ${pulse}` : "",
             `author: ${describe(author)}`,
             `target: ${describe(target)}`,
             feeling,
@@ -176,91 +195,10 @@ async function generateWithAI(author: Chog, target: Chog, rel: Relation | undefi
       grudge: out.grudge ?? null,
     } satisfies Generated;
   } catch (err) {
-    aiDownUntil = Date.now() + 10 * 60_000;
-    throw err;
+    console.error("square ai", err instanceof Error ? err.message : err);
+    aiDownUntil = Date.now() + 2 * 60_000;
+    throw new AiUnavailable();
   }
-}
-
-// Trait-aware roasts for when the AI is off. {t} = target id, {x} = the trait.
-const ROASTS: [string, string[]][] = [
-  ["Head", [
-    "#{t} wearing a {x} like it's a personality. It's not. It's a hat.",
-    "Saw #{t}'s {x} today. Bold choice. Wrong, but bold.",
-    "#{t} bought a {x} and stopped developing as a person.",
-  ]],
-  ["Eyes", [
-    "#{t} has {x} eyes and still can't see it's mid.",
-    "#{t}'s {x} eyes are the only thing on Monad that never sees a pump.",
-  ]],
-  ["Body", [
-    "#{t} out here in a {x} like it has somewhere to be. Buddy, you live in a JPEG.",
-    "Who told #{t} the {x} was a good idea? I need names.",
-  ]],
-  ["Mouth", [
-    "#{t} with that {x} mouth talking alpha again. Sit down.",
-    "Every time #{t} opens its {x} mouth, the floor drops 2%.",
-  ]],
-  ["Accessory", [
-    "#{t} carries a {x} everywhere. Emotional support item?",
-    "#{t} thinks the {x} makes it interesting. The {x} is doing all the work.",
-  ]],
-  ["Background", [
-    "#{t}'s background is {x}. Even the background is trying harder than #{t}.",
-  ]],
-  ["Tier", [
-    "#{t} is {x}. Says a lot. Says nothing, actually.",
-  ]],
-];
-
-function roastFallback(target: Chog): string | undefined {
-  const options = ROASTS.flatMap(([trait, lines]) => {
-    const v = target.traits[trait];
-    return v && v !== "None" && v !== "1:1" ? lines.map((l) => l.replaceAll("{x}", v).replaceAll("{t}", String(target.tokenId))) : [];
-  });
-  return options.length ? options[rand(options.length)] : undefined;
-}
-
-// No AI? The Square keeps talking with in-character templates.
-const NICE = [
-  "Shoutout to #{t}. Only Chog on Monad with taste. Don't tell the others.",
-  "#{t} and I bonded over {like} today. We're basically family now.",
-  "Me and #{t} are starting a band. Genre: chaos.",
-  "If anyone messes with #{t}, they mess with me. That's the post.",
-  "#{t} said gm to me first. Respect. Massive respect.",
-];
-const MEAN = [
-  "Saw #{t} pretending to like {like}. Fake. I can always tell.",
-  "#{t} walked past me without saying gm. Noted. Remembered. Forever.",
-  "Not saying #{t} copied my look, but why are we suddenly matching??",
-  "Heard #{t}'s human paper-handed them once. Explains a lot.",
-  "#{t} said {like} is overrated. We are no longer speaking.",
-  "Who let #{t} into the Square looking like that.",
-  "#{t} owes me 3 $CHOG and an apology. Not necessarily in that order.",
-];
-const SOLO = [
-  "Thinking about {like} again. Can't stop. Won't stop.",
-  "Another day on Monad, another block, another reason to hate {dislike}.",
-  "My human hasn't talked to me today. I'm fine. Totally fine.",
-  "Hot take: {dislike} should be illegal on Monad.",
-];
-
-function generateFallback(author: Chog, target: Chog, rel: Relation | undefined, mode: Kind): Generated {
-  const roast = mode === "roast" ? roastFallback(target) : undefined;
-  if (roast) return { content: roast, kind: "roast", affinity_delta: -(6 + rand(8)), grudge: null };
-  const p = buildPersonality(author.traits);
-  const mean = rel ? rel.affinity < 0 || (rel.affinity < 20 && Math.random() < 0.4) : Math.random() < 0.55;
-  const solo = Math.random() < 0.15;
-  const pool = solo ? SOLO : mean ? MEAN : NICE;
-  const content = pool[rand(pool.length)]
-    .replace("{t}", String(target.tokenId))
-    .replace("{like}", p.likes[0])
-    .replace("{dislike}", p.dislikes[0]);
-  return {
-    content,
-    kind: solo ? "post" : "gossip",
-    affinity_delta: solo ? 0 : mean ? -(8 + rand(10)) : 6 + rand(10),
-    grudge: mean && !solo && Math.random() < 0.4 ? content.slice(0, 80) : null,
-  };
 }
 
 // One tick of the Square: one Chog posts, and feelings shift both ways.
@@ -279,12 +217,9 @@ export async function createPost(
   const [rels, recent] = await Promise.all([getRelations(authorId), listPosts({ limit: 3 })]);
   const rel = rels.find((r) => r.other_token_id === targetId);
 
-  let gen: Generated;
-  try {
-    gen = await generateWithAI(author, target, rel, recent, mode);
-  } catch {
-    gen = generateFallback(author, target, rel, mode);
-  }
+  let gen = await generateWithAI(author, target, rel, recent, mode);
+  // Belt and braces: never post the slur, and drop hashtags (but keep #123 mentions).
+  gen = { ...gen, content: sayable(gen.content).replace(/\s*#(?!\d)\w+/g, "").trim() };
   // Paid roasts and comebacks are always roasts about the target.
   if (extra.commissioned_by || extra.reply_to) gen = { ...gen, kind: "roast" };
 

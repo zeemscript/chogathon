@@ -39,6 +39,11 @@ export type Market = {
   url: string;
 };
 
+// The collection floor in MON (cached 10 min with the stats).
+export async function getFloor(): Promise<number | undefined> {
+  return (await os<{ total?: { floor_price?: number } }>(`collections/${SLUG}/stats`, 10 * 60_000))?.total?.floor_price;
+}
+
 export async function getMarket(tokenId: number): Promise<Market> {
   type Stats = { total?: { floor_price?: number } };
   type Events = { asset_events?: { payment?: { quantity: string; symbol: string; decimals: number }; event_timestamp: number }[] };

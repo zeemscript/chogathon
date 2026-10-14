@@ -4,9 +4,11 @@ import { addLoyalty, auraDay, award, getAura } from "@/lib/aura";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { parseTokenId } from "@/lib/chogs";
 import { getOwner } from "@/lib/owners";
+import { DEV_OWNER } from "@/lib/dev";
 import { chatQuota } from "@/lib/limits";
 import { addCredits, getCredits } from "@/lib/payments";
 import { isRealWallet, resolveSpeaker, visitorId, type AuthPayload } from "@/lib/speaker";
+import { marketPulse } from "@/lib/pulse";
 import { prepareSoul, remember, systemPrompt, type Speaker } from "@/lib/soul";
 import { getRelations, listPosts, nudgeRelation } from "@/lib/town";
 
@@ -60,7 +62,9 @@ export async function POST(request: NextRequest) {
   const owner = await getOwner(tokenId);
   const speaker = await resolveSpeaker(body?.auth, owner);
   // Who these turns belong to: the owner's wallet, or this specific visitor.
-  const memoryOwner = speaker.role === "owner" ? speaker.address! : `visitor:${visitorId(request, speaker)}`;
+  // Dev owner mode files its turns as a visitor's, so the real holder never
+  // "remembers" test chats; the dev session still sees them (filter below).
+  const memoryOwner = DEV_OWNER ? "visitor:dev-owner" : speaker.role === "owner" ? speaker.address! : `visitor:${visitorId(request, speaker)}`;
 
   const quota = await chatQuota(memoryOwner, speaker.role);
   // Free chats used up? Spend a chat bought with $CHOG, if this wallet has one.
@@ -76,11 +80,12 @@ export async function POST(request: NextRequest) {
           : `You've used all ${quota.limit} visitor chats for today. Own a Chog to talk more.`;
     return Response.json({ error, remaining: 0, limit: quota.limit, canBuy: quota.reason === "you" }, { status: 429 });
   }
-  const [{ chog, memory }, relations, gossip, aura] = await Promise.all([
+  const [{ chog, memory }, relations, gossip, aura, pulse] = await Promise.all([
     prepareSoul(tokenId, owner),
     getRelations(tokenId),
     listPosts({ tokenId, limit: 3 }),
     getAura(tokenId).catch(() => undefined),
+    marketPulse(),
   ]);
   const { data: state } = await supabaseAdmin().from("chog_state").select("loyalty").eq("token_id", tokenId).maybeSingle();
   const standing = aura && { tier: aura.tier, score: aura.score, loyalty: state?.loyalty ?? 0 };
@@ -90,7 +95,7 @@ export async function POST(request: NextRequest) {
     .filter((m) => m.kind === "chat")
     // Owners inherit every past owner's conversations; visitors only see their own.
     .filter((m) =>
-      speaker.role === "owner" ? !m.owner?.startsWith("visitor:") : m.owner === memoryOwner,
+      m.owner === memoryOwner || (speaker.role === "owner" && !m.owner?.startsWith("visitor:")),
     )
     // Token budget: the last 12 turns, each trimmed. Older context lives in events/summary.
     .slice(-12)
@@ -104,7 +109,7 @@ export async function POST(request: NextRequest) {
     temperature: 1.1,
     max_tokens: 180,
     messages: [
-      { role: "system", content: systemPrompt(chog, owner, speaker, memory, { relations, gossip }, standing) },
+      { role: "system", content: systemPrompt(chog, owner, speaker, memory, { relations, gossip }, standing, pulse) },
       ...turns,
       { role: "user", content: message },
     ],

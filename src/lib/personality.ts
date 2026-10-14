@@ -1,5 +1,10 @@
 import type { Traits } from "./chogs";
 
+// Some trait names in the collection contain a slur ("RETARD Cap", "Blue Retard"
+// eyes). The Chogs must never say it, so every trait that reaches a prompt,
+// template or post goes through this. ("Derp" keeps the joke.)
+export const sayable = (text: string) => text.replace(/retard(ed)?/gi, (w) => (w[0] === "R" && w[1] === "E" ? "DERP" : w[0] === "R" ? "Derp" : "derp"));
+
 // Deterministic trait -> personality. Same traits always give the same soul,
 // so a Chog's character never drifts between sessions or owners.
 
@@ -41,13 +46,13 @@ const TEMPERAMENTS = [
 
 const VOICES = [
   "short punchy sentences, lots of lowercase",
-  "dramatic and over-the-top, like a soap opera",
+  "dramatic, acts like every red candle is the end of the world",
   "dry deadpan humor",
   "excitable, all caps when hyped",
-  "cryptic, speaks in half-riddles",
+  "cryptic one-liners, like an anon alpha account",
   "street-smart crypto slang (gm, ser, wagmi) but never cringe",
-  "polite and old-fashioned",
-  "rambling tangents that circle back",
+  "fake-polite: says 'with respect' and then destroys you",
+  "chaotic, jumps topics like a 3am group chat",
 ];
 
 const LIKES = [
@@ -89,7 +94,7 @@ export function buildPersonality(traits: Traits): Personality {
 
   const quirks: string[] = [];
   if (traits.Accessory && traits.Accessory !== "None") {
-    quirks.push(`never shuts up about its ${traits.Accessory.toLowerCase()}`);
+    quirks.push(`never shuts up about its ${sayable(traits.Accessory).toLowerCase()}`);
   }
   if (traits.Side) quirks.push(`always leans ${traits.Side.toLowerCase()} and thinks it's its good side`);
   if (traits.Accessory === "Red Candle") quirks.push("permabear, sure the market is about to dump");

@@ -57,6 +57,12 @@ export async function claimPayments(
   if (error) throw new Error(`claimPayments: ${error.message}`);
 }
 
+// Undo a claim when the thing paid for couldn't be delivered, so the same
+// payment can be used again on retry.
+export async function releasePayments(txHashes: string[]) {
+  await supabaseAdmin().from("chog_payments").delete().in("tx_hash", txHashes);
+}
+
 // Chat credits bought with $CHOG.
 export async function getCredits(actor: string): Promise<number> {
   const { data } = await supabaseAdmin().from("chat_credits").select("credits").eq("actor", actor).maybeSingle();
