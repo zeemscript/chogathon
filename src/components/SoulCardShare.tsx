@@ -70,14 +70,20 @@ export default function SoulCardShare({ tokenId }: { tokenId: number }) {
       </div>
       <div className="p-4 [perspective:1200px]">
         <div className="group/card shine relative aspect-[3/2] overflow-hidden rounded-xl border border-line-bright bg-night-3 shadow-[0_24px_60px_-24px_rgba(131,110,249,.7)] transition-transform duration-500 ease-out hover:[transform:rotateX(5deg)_rotateY(-7deg)_scale(1.02)]">
-          {loaded !== src && <div className="absolute inset-0 animate-pulse bg-night-3" />}
+          {/* Skeleton only before the first card; after that, the last card stays
+              up while the next style loads, and the new one fades in over it. */}
+          {!loaded && <div className="absolute inset-0 animate-pulse bg-night-3" />}
+          {loaded && loaded !== src && (
+            // eslint-disable-next-line @next/next/no-img-element -- generated PNG
+            <img src={loaded} alt="" aria-hidden className="absolute inset-0 size-full object-cover" />
+          )}
           {/* eslint-disable-next-line @next/next/no-img-element -- generated PNG */}
           <img
             key={src}
             src={src}
             alt={`Soul Card for Chog #${tokenId}`}
             onLoad={() => setLoaded(src)}
-            className="size-full object-cover transition-opacity duration-500"
+            className="relative size-full object-cover transition-opacity duration-300"
             style={{ opacity: loaded === src ? 1 : 0 }}
           />
         </div>

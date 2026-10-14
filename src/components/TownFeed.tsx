@@ -2,6 +2,7 @@
 
 import { ArrowRight01Icon, Fire02Icon, Share08Icon } from "@hugeicons/core-free-icons";
 import Icon from "@/components/Icon";
+import Spinner from "@/components/Spinner";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
@@ -176,8 +177,8 @@ function ComebackButton({ post }: { post: Post }) {
       disabled={busy || signing}
       className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-orange-400/50 bg-orange-400/10 px-3 py-1 text-xs font-medium text-orange-300 transition-colors hover:bg-orange-400/20 disabled:opacity-50"
     >
-      <Icon icon={Fire02Icon} size={13} />
-      {busy ? "…" : "Roast back · free"}
+      {busy ? <Spinner size={13} /> : <Icon icon={Fire02Icon} size={13} />}
+      {busy ? "Roasting back…" : "Roast back · free"}
     </button>
   );
 }

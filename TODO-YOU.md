@@ -18,7 +18,8 @@ Last updated: 2026-10-12
 
 - [ ] **A Chog to test as an owner** (or a borrowed wallet holding one)
   - Floor is ~5,450 MON. A real buy also gives the best demo: the Chog noticing its new owner.
-  - Meanwhile: add `DEV_IMPERSONATE_OWNER=1` to `.env.local` to act as the owner of any Chog (dev only).
+  - Meanwhile: `NEXT_PUBLIC_DEV_OWNER=1` in `.env.local` (already on) makes you the owner of every Chog on
+    localhost. Delete that line to go back to normal. It never works on the live site.
 
 - [ ] **10–20 real holders to try it** (day 13 of the plan). The site is public now:
       https://chog-souls.vercel.app, so you can start sharing it in the Chog Discord.

@@ -11,6 +11,7 @@ import { Coins01Icon, FireIcon, Sun03Icon } from "@hugeicons/core-free-icons";
 import AuraFlame from "@/components/AuraFlame";
 import Icon from "@/components/Icon";
 import RoastButton from "@/components/RoastButton";
+import Spinner from "@/components/Spinner";
 import { TIER_STYLE } from "@/lib/tiers";
 import { cn } from "@/lib/utils";
 
@@ -204,15 +205,15 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
 
       <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-3 sm:px-5">
         {isOwner ? (
-          <Button size="sm" variant="ok" onClick={care} disabled={!!busy || signing}>
-            <Icon icon={Sun03Icon} size={14} />
-            {busy === "care" || signing ? "…" : "Daily check-in"}
+          <Button size="sm" variant="ok" onClick={care} disabled={!!busy || signing} aria-busy={busy === "care"} className="aria-busy:opacity-100">
+            {busy === "care" ? <Spinner /> : <Icon icon={Sun03Icon} size={14} />}
+            {busy === "care" ? (signing ? "Sign in your wallet…" : "Checking in…") : "Daily check-in"}
           </Button>
         ) : (
           <>
-            <Button size="sm" onClick={hype} disabled={!!busy || signing}>
-              <Icon icon={FireIcon} size={14} />
-              {busy === "hype" || signing ? "…" : "Hype"}
+            <Button size="sm" onClick={hype} disabled={!!busy || signing} aria-busy={busy === "hype"} className="aria-busy:opacity-100">
+              {busy === "hype" ? <Spinner /> : <Icon icon={FireIcon} size={14} />}
+              {busy === "hype" ? (signing ? "Sign in your wallet…" : "Hyping…") : "Hype"}
             </Button>
             <RoastButton targetId={tokenId} targetName={`#${tokenId}`} />
           </>
@@ -230,7 +231,7 @@ export default function AuraPanel({ tokenId, owner }: { tokenId: number; owner?:
                 disabled={!!busy}
                 className="h-9 cursor-pointer border-l border-line-bright px-2.5 font-mono text-xs sm:px-3 transition-colors hover:bg-chog-gold/15 hover:text-chog-gold disabled:opacity-50"
               >
-                {busy === `feed${n}` ? "…" : n}
+                {busy === `feed${n}` ? <Spinner size={13} className="mx-auto" /> : n}
               </button>
             ))}
           </div>

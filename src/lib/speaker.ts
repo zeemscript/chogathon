@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { isAddress, verifyMessage } from "viem";
 import { AUTH_TTL_MS, authMessage } from "./auth";
+import { DEV_OWNER } from "./dev";
 import { getOwners, publicClient } from "./owners";
 import type { Speaker } from "./soul";
 
@@ -9,8 +10,8 @@ export type AuthPayload = { address: string; issuedAt: string; signature: `0x${s
 
 // Resolve who is talking. A valid signature from the current holder = owner.
 export async function resolveSpeaker(auth: AuthPayload | undefined, owner: string | undefined): Promise<Speaker> {
-  // Dev only: DEV_IMPERSONATE_OWNER=1 treats every speaker as the owner.
-  if (process.env.NODE_ENV !== "production" && process.env.DEV_IMPERSONATE_OWNER === "1" && owner) {
+  // Dev only (see lib/dev): every speaker is the owner.
+  if (DEV_OWNER && owner) {
     return { role: "owner", address: owner };
   }
   if (!auth || !isAddress(auth.address)) return { role: "visitor" };

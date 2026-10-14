@@ -1,17 +1,17 @@
 "use client";
 
-import { useAccount } from "wagmi";
+import { useViewer } from "@/hooks/useOwnerAuth";
 
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 
 export default function OwnerBadge({ owner }: { owner?: string }) {
-  const { address } = useAccount();
+  const { isOwner, dev } = useViewer(owner);
   if (!owner) return <span className="label-mono text-muted-foreground">Owner unknown</span>;
-  if (address?.toLowerCase() === owner) {
+  if (isOwner) {
     return (
       <span className="label-mono inline-flex items-center gap-2 rounded-full border border-chog-ok/40 bg-chog-ok/10 px-3 py-1 text-chog-ok">
         <span className="size-1.5 animate-pulse-dot rounded-full bg-chog-ok" />
-        Your Chog
+        {dev ? "Your Chog · dev mode" : "Your Chog"}
       </span>
     );
   }

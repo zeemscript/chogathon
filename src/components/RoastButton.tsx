@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import Icon from "@/components/Icon";
+import Spinner from "@/components/Spinner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { friendly, PRICES, TREASURY, useChogPay } from "@/hooks/useChogPay";
@@ -114,6 +115,7 @@ export default function RoastButton({ targetId, targetName }: { targetId: number
           {choices.length > 0 && (
             <Button onClick={roast} disabled={!pick || busy}>
               <Icon icon={Fire02Icon} size={15} />
+              {busy && <Spinner />}
               {busy ? "Roasting…" : pick ? `#${pick} roasts it · ${PRICES.roast} $CHOG` : "Pick your Chog"}
             </Button>
           )}

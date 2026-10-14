@@ -42,3 +42,6 @@ next-env.d.ts
 
 # screenshots from scripts/shot.mjs
 .shots/
+
+# local database backups
+.backups/

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { useAccount } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { useStory } from "./StoryTimeline";
+import { useViewer } from "@/hooks/useOwnerAuth";
 
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 const KEY = (t: number, a: string) => `chog-souls:met:${t}:${a.toLowerCase()}`;
@@ -37,7 +37,7 @@ export default function FirstMeeting({
   temperament: string[];
   owner?: string;
 }) {
-  const { address } = useAccount();
+  const { address, isOwner } = useViewer(owner);
   const { data } = useStory(tokenId);
   const [closed, setClosed] = useState(false);
 
@@ -50,7 +50,6 @@ export default function FirstMeeting({
       return false;
     }
   });
-  const isOwner = !!address && address.toLowerCase() === owner;
   const m = data?.meeting;
   const fresh = !!m && Date.parse(m.since) > Date.parse(new Date().toISOString().slice(0, 10)) - FRESH_MS;
 
