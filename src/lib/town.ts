@@ -133,19 +133,55 @@ function describe(c: Chog) {
 // Same text on every call, so DeepSeek's prompt cache bills it at the cheap
 // cached rate. Everything that varies goes in the short user message.
 const SQUARE_SYSTEM =
-  "You write one post for Town Square, a public feed where Chog NFTs (chaotic creatures on Monad) roast and gossip about each other. " +
-  "Write like crypto Twitter and NFT degens talk: short punchy lines, lowercase is fine, simple everyday words anyone gets on first read, even if English isn't their first language. " +
-  "Use at most one bit of CT slang per post, and vary it (gm, ngmi, wagmi, rekt, mid, cope, ser, fren, anon, down bad, cooked, jeet, paper hands, diamond hands, floor, rug, exit liquidity, bags, ratio, based, it's so over, we're so back). Many great posts use none. Never start with 'ser'. " +
-  "Never fancy or old-fashioned words (no thou, thy, alas, darling, chap, indeed). The author's personality changes what it says, never the reading level. " +
-  "Be genuinely funny: specific and petty. Hit the target's actual traits (cap, eyes, outfit, item, background) and tie them to degen life: bags, charts, floor price, gas, airdrops, rugs, jeeting. " +
-  "If the 'today' line gives something real (a price move, a trending coin or NFT), use it when it makes the joke hit harder. Never invent news or prices. " +
-  "Max 160 chars. No hashtags. Most posts use no emoji, never more than one. Never: slurs, real-world hate, 'pick a struggle', 'says a lot'. " +
-  'Tone examples (do not copy): "#1255 gangster suit on a coral pink background. not a vibe ser, that\'s a juice box with a criminal record" ' +
-  '"#808 dead eyes like it\'s been staring at the chart since presale. same fren, same" ' +
-  '"#549 laser eyes and still asleep. that\'s not diamond hands, that\'s a coma" ' +
-  "A roast mocks the target's actual traits (cap, eyes, outfit, item, background) in a clever way, never slurs or real-world hate. " +
-  'Reply only with JSON: {"content":string,"kind":"post"|"gossip"|"roast","affinity_delta":int -25..25,"grudge":string|null}. ' +
+  "You write one post for Town Square, a public feed where Chog NFTs (chaotic little creatures on Monad) roast and gossip about each other. Your only job: make people laugh out loud and screenshot it. " +
+  "VOICE: crypto Twitter and NFT degens. Short, lowercase is fine, simple everyday words anyone gets on first read, even if English isn't their first language. Never fancy or old-fashioned words. The author's personality changes the angle, never the reading level. " +
+  "HOW A ROAST LANDS: pick ONE or TWO of the target's real traits (cap, eyes, mouth, outfit, item, background), turn them into one vivid, specific picture, and end on the punchline. Comparisons work ('a juice box with a criminal record'), so do reversals ('not diamond hands, a coma'), fake-polite setups, and tying the look to degen pain: bags, floor, charts, airdrops, rugs, gas, exit liquidity, missing the pump. Never list traits, never explain the joke, no filler after the punchline. " +
+  "SLANG: at most one term per post, and vary it (gm, ngmi, wagmi, rekt, mid, cope, fren, anon, down bad, cooked, paper hands, diamond hands, floor, rug, exit liquidity, bags, ratio, based, it's so over, we're so back). Many great posts use none. Never start with 'ser'. Never use 'jeet'. " +
+  "CURRENT EVENTS: if a 'today' line is given, use a headline or move ONLY when it makes a natural, instantly-gettable comparison (e.g. a dying marketplace, a coin that tanked). Otherwise ignore it. Never invent news, prices or people. " +
+  "RULES: max 150 characters. No hashtags. Usually no emoji, never more than one. Mild language only. Never slurs, real-world hate, or jokes about real people's bodies, race or religion. Tired lines, never use: 'pick a struggle', 'says a lot', 'touch grass', 'exit liquidity', 'with respect', 'bags to zero', and never end on 'cope.' or 'ngmi.' " +
+  'EXAMPLES of the bar (never copy): "#1255 gangster suit on a coral pink background. not a threat, a juice box with a criminal record" | ' +
+  '"#549 laser eyes and still asleep. that\'s not diamond hands, that\'s a coma" | ' +
+  '"#1463 durag, stripes, sad eyes. a gas station robbery that went wrong" | ' +
+  '"#417 robber mask and still the one getting robbed every cycle" | ' +
+  '"#903 keeps a btc coin in its mouth like a pacifier. panic sold the top, rebought the bottom. twice" | ' +
+  '"#38 star cap, crying eyes. looks like it just found out its whole bag was on Blur" ' +
+  "PROCESS: write 4 different options, each from a different angle (comparison, reversal, degen-pain, fake-polite), then pick the one most likely to get screenshotted. " +
+  'Reply only with JSON: {"options":[string,string,string,string],"best":0-3,"kind":"post"|"gossip"|"roast","affinity_delta":int -25..25,"grudge":string|null}. ' +
   "affinity_delta = how the post shifts the author's feelings to the target. grudge = short reason if one forms, else null.";
+
+// The model sometimes wraps its JSON in stray text or code fences.
+function parseJson<T>(text: string | null | undefined): T {
+  const t = text ?? "";
+  return JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1) || "{}") as T;
+}
+
+// A second, cold read: the writer is bad at picking its own best line, so a
+// strict judge picks the funniest draft. Falls back to the writer's pick.
+const JUDGE_SYSTEM =
+  "You judge roasts for crypto Twitter. Pick the ONE draft that would get the most laughs and screenshots from NFT degens. " +
+  "Reward: one vivid, specific picture built from the target's traits, a twist that lands at the very end, short and instantly understood. " +
+  "Punish: generic insults, lists of traits, clichés (exit liquidity, cope, bags to zero, with respect), forced news references, explaining the joke, crude words. " +
+  'Reply only with JSON: {"best":int}.';
+
+async function judge(options: string[], fallback: number): Promise<number> {
+  if (options.length < 2) return 0;
+  try {
+    const res = await deepseek.chat.completions.create({
+      model: CHAT_MODEL,
+      temperature: 0.2,
+      max_tokens: 20,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: JUDGE_SYSTEM },
+        { role: "user", content: options.map((o, i) => `${i}: ${o}`).join("\n") },
+      ],
+    });
+    const best = Number(parseJson<{ best?: number }>(res.choices[0]?.message?.content).best);
+    return Number.isInteger(best) && best >= 0 && best < options.length ? best : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 // Every post is written by the AI; there are no canned lines. If DeepSeek is
 // down (or out of credit), posting fails with AiUnavailable and callers skip
@@ -166,8 +202,8 @@ async function generateWithAI(author: Chog, target: Chog, rel: Relation | undefi
   try {
     const res = await deepseek.chat.completions.create({
       model: CHAT_MODEL,
-      temperature: 1.25,
-      max_tokens: 110,
+      temperature: 1.2,
+      max_tokens: 420, // four drafts, then the best one
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SQUARE_SYSTEM },
@@ -186,10 +222,12 @@ async function generateWithAI(author: Chog, target: Chog, rel: Relation | undefi
         },
       ],
     });
-    const out = JSON.parse(res.choices[0]?.message?.content ?? "{}") as Partial<Generated>;
-    if (!out.content) throw new Error("empty post");
+    const out = parseJson<Partial<Generated> & { options?: string[]; best?: number }>(res.choices[0]?.message?.content);
+    const options = (out.options ?? []).filter((o) => typeof o === "string" && o.trim());
+    const content = options.length ? options[await judge(options, Number(out.best) || 0)] : out.content;
+    if (!content) throw new Error("empty post");
     return {
-      content: out.content.slice(0, 240),
+      content: content.slice(0, 240),
       kind: (["post", "gossip", "roast"] as Kind[]).includes(out.kind as Kind) ? (out.kind as Kind) : mode,
       affinity_delta: Number(out.affinity_delta) || 0,
       grudge: out.grudge ?? null,

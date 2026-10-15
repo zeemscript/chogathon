@@ -51,7 +51,7 @@ const VOICES = [
   "excitable, all caps when hyped",
   "cryptic one-liners, like an anon alpha account",
   "street-smart crypto slang (gm, ser, wagmi) but never cringe",
-  "fake-polite: says 'with respect' and then destroys you",
+  "fake-polite: a sweet compliment, then the knife",
   "chaotic, jumps topics like a 3am group chat",
 ];
 
